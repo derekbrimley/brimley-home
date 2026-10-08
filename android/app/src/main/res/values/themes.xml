@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Paper-white window from the first frame; Compose draws everything else. -->
+    <style name="Theme.BrimleyHome" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#E8E7E2</item>
+        <item name="android:statusBarColor">#141413</item>
+        <item name="android:navigationBarColor">#141413</item>
+    </style>
+</resources>

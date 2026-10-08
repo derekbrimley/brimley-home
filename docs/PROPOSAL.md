@@ -272,6 +272,18 @@ api_tokens       id, name, token_hash, scopes[], created_at, last_used_at
 
 RLS on, service role from the API, as in Crate.
 
+## Build status (October 2026)
+
+- Backend: `/api/today`, jobs, bounties, cards, notes, daily sync, sheet parsing,
+  calendar, weather, catalog resolution. Typechecks; 30 unit tests pass.
+- Tablet: app shell, Woodcut/Fredoka theme, home screen (four cards, band, footer),
+  all-done stamp and star burst, Watch picker with confirmation, stylus note screen,
+  night clock, boot receiver, kiosk flags. Not yet compiled (no Android SDK on the
+  build host); first build will need a pass of compiler fixes.
+- Not started: Crate household token and the Music tab (milestone 3), sending a
+  title to the TV over the Android TV remote protocol (milestone 5), Yoto and
+  Our makes (milestone 6).
+
 ## Build order
 
 1. Tablet app shell with one theme, kiosk mode, night clock, fake `/api/today`.

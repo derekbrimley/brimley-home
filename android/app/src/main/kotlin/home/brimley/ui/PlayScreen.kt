@@ -1,0 +1,179 @@
+package home.brimley.ui
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import home.brimley.model.CatalogItem
+import home.brimley.model.Today
+import home.brimley.ui.theme.Ink
+import home.brimley.ui.theme.Paper
+import home.brimley.ui.theme.PaperBright
+import home.brimley.ui.theme.PillShape
+import home.brimley.ui.theme.Rules
+
+enum class PlayTab(val label: String, val where: String) {
+    Music("Music", "Music goes to the kitchen speaker"),
+    Watch("Watch", "Watch goes to the living room TV"),
+    Stories("Stories", "Stories go to the Yoto, or play here"),
+}
+
+// One picker, three tabs. Music and Stories fill in with milestones 3 and 6;
+// Watch shows the catalog now and the TV connection lands in milestone 5.
+@Composable
+fun PlayScreen(today: Today?, initialTab: PlayTab, onHome: () -> Unit) {
+    var tab by remember { mutableStateOf(initialTab) }
+    var pending by remember { mutableStateOf<CatalogItem?>(null) }
+
+    Column(Modifier.fillMaxSize().background(Paper)) {
+        Row(
+            Modifier.fillMaxWidth().height(120.dp).background(Ink).padding(horizontal = 30.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            InkButton("← Home", onClick = onHome, filled = false, onPaper = false)
+            Spacer(Modifier.width(24.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Play something", style = MaterialTheme.typography.headlineLarge, color = Paper)
+                Text(tab.where, style = MaterialTheme.typography.bodySmall, color = Paper)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PlayTab.entries.forEach { t ->
+                    val on = t == tab
+                    Box(
+                        Modifier
+                            .clip(PillShape)
+                            .background(if (on) Paper else Ink)
+                            .border(BorderStroke(Rules.thin, Paper), PillShape)
+                            .clickable { tab = t }
+                            .padding(horizontal = 22.dp, vertical = 10.dp),
+                    ) { Text(t.label, style = MaterialTheme.typography.labelLarge, color = if (on) Ink else Paper) }
+                }
+            }
+        }
+
+        Box(Modifier.fillMaxSize()) {
+            when (tab) {
+                PlayTab.Watch -> WatchShelves(today?.catalog.orEmpty(), onPick = { pending = it })
+                PlayTab.Music -> ComingSoon("Albums arrive when Crate is connected (milestone 3).")
+                PlayTab.Stories -> ComingSoon("Yoto cards arrive in milestone 6.")
+            }
+            pending?.let { item ->
+                ConfirmPlay(item, onCancel = { pending = null }, onPlay = { pending = null /* milestone 5: send to the TV */ })
+            }
+        }
+    }
+}
+
+private val shelfOrder = listOf("shows" to "Shows", "movies" to "Movies", "videos" to "Videos", "listen" to "Listen")
+
+@Composable
+private fun WatchShelves(catalog: List<CatalogItem>, onPick: (CatalogItem) -> Unit) {
+    val groups = catalog.groupBy { it.shelf }
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 30.dp, vertical = 14.dp)) {
+        shelfOrder.forEach { (key, label) ->
+            val items = groups[key].orEmpty()
+            if (items.isEmpty()) return@forEach
+            item(key = "h-$key") {
+                Text(label, style = MaterialTheme.typography.titleLarge, color = Ink, modifier = Modifier.padding(top = 10.dp, bottom = 8.dp))
+            }
+            item(key = "r-$key") {
+                Column {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                        items(items, key = { it.id }) { Poster(it, onClick = { onPick(it) }) }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider(thickness = 5.dp, color = Ink)
+                }
+            }
+        }
+        if (catalog.isEmpty()) item { ComingSoon("Nothing on the shelves yet. Add titles to the Watch tab of the family sheet.") }
+    }
+}
+
+@Composable
+private fun Poster(item: CatalogItem, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    val portrait = item.shelf == "shows" || item.shelf == "movies"
+    Column(Modifier.width(if (portrait) 150.dp else 220.dp).clickable(onClick = onClick)) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(if (portrait) 2f / 3f else 16f / 9f)
+                .clip(shape)
+                .background(PaperBright)
+                .border(BorderStroke(4.dp, Ink), shape),
+        ) {
+            if (item.posterUrl != null) {
+                AsyncImage(model = item.posterUrl, contentDescription = item.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            } else {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(item.title, style = MaterialTheme.typography.titleMedium, color = Ink, modifier = Modifier.padding(10.dp))
+                }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(item.title, style = MaterialTheme.typography.labelLarge, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Pill(item.serviceLabel.uppercase(), filled = item.service == "netflix")
+    }
+}
+
+@Composable
+private fun ConfirmPlay(item: CatalogItem, onCancel: () -> Unit, onPlay: () -> Unit) {
+    Box(Modifier.fillMaxSize().background(Ink.copy(alpha = 0.18f)).clickable(onClick = onCancel), contentAlignment = Alignment.Center) {
+        Column(
+            Modifier
+                .width(520.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Paper)
+                .border(BorderStroke(8.dp, Ink), RoundedCornerShape(24.dp))
+                .clickable(enabled = false) {}
+                .padding(28.dp),
+        ) {
+            Text(item.title, style = MaterialTheme.typography.headlineMedium, color = Ink)
+            val facts = listOfNotNull(item.serviceLabel, item.runtimeMinutes?.let { "${it / 60}h ${it % 60}m" })
+            Text(facts.joinToString(" · ") + " · Play on the living room TV?", style = MaterialTheme.typography.bodyMedium, color = Ink, modifier = Modifier.padding(top = 6.dp))
+            Spacer(Modifier.height(22.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                InkButton("Not now", onClick = onCancel, filled = false, modifier = Modifier.weight(1f))
+                InkButton("Play", onClick = onPlay, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ComingSoon(text: String) {
+    Box(Modifier.fillMaxSize().padding(40.dp), contentAlignment = Alignment.Center) {
+        Text(text, style = MaterialTheme.typography.titleMedium, color = Ink)
+    }
+}

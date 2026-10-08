@@ -1,0 +1,17 @@
+node_modules/
+dist-server/
+.vercel/
+.env
+.env.local
+.env*.local
+*.log
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/*.iml
+android/.kotlin/
