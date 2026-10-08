@@ -48,6 +48,7 @@ fun HomeScreen(
     onClaimBounty: (Int) -> Unit,
     onPlaySomething: () -> Unit,
     onDrawNote: () -> Unit,
+    onControl: (String) -> Unit,
 ) {
     Column(Modifier.fillMaxSize().background(Paper)) {
         Band(today, error)
@@ -66,7 +67,7 @@ fun HomeScreen(
                 )
             }
             Column(Modifier.weight(1.4f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                PlayingCard(today.playing, onPlaySomething, Modifier.weight(1.05f).fillMaxWidth())
+                PlayingCard(today.playing, onPlaySomething, onControl, Modifier.weight(1.05f).fillMaxWidth())
                 NoteCard(today.cards, onDrawNote, Modifier.weight(1f).fillMaxWidth())
             }
         }

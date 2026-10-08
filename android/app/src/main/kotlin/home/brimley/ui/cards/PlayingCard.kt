@@ -3,6 +3,7 @@ package home.brimley.ui.cards
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,7 +37,7 @@ import home.brimley.ui.theme.Rules
 import home.brimley.ui.theme.TileShape
 
 @Composable
-fun PlayingCard(playing: List<Playing>, onPlaySomething: () -> Unit, modifier: Modifier = Modifier) {
+fun PlayingCard(playing: List<Playing>, onPlaySomething: () -> Unit, onControl: (String) -> Unit, modifier: Modifier = Modifier) {
     InkCard(modifier) {
         val where = listOf(
             playing.firstOrNull { it.target == "kitchen" }?.let { "kitchen speaker" } ?: "kitchen quiet",
@@ -48,13 +49,61 @@ fun PlayingCard(playing: List<Playing>, onPlaySomething: () -> Unit, modifier: M
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             when (playing.size) {
                 0 -> NothingPlaying()
-                1 -> NowPlaying(playing[0], big = true)
-                else -> playing.take(2).forEach { NowPlaying(it, big = false) }
+                1 -> NowPlaying(playing[0], big = true, onControl = onControl)
+                else -> playing.take(2).forEach { NowPlaying(it, big = false, onControl = onControl) }
             }
         }
         Spacer(Modifier.height(12.dp))
         InkButton("Play something", onClick = onPlaySomething, modifier = Modifier.fillMaxWidth(), shape = TileShape)
     }
+}
+
+@Composable
+private fun Transport(isPlaying: Boolean, onControl: (String) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        TransportButton(filled = false, onClick = { onControl("previous") }) { PrevIcon(it) }
+        TransportButton(filled = true, onClick = { onControl(if (isPlaying) "pause" else "resume") }) { if (isPlaying) PauseIcon(it) else PlayIcon(it) }
+        TransportButton(filled = false, onClick = { onControl("next") }) { NextIcon(it) }
+    }
+}
+
+@Composable
+private fun TransportButton(filled: Boolean, onClick: () -> Unit, icon: @Composable (androidx.compose.ui.graphics.Color) -> Unit) {
+    Box(
+        Modifier
+            .size(56.dp)
+            .clip(androidx.compose.foundation.shape.CircleShape)
+            .background(if (filled) Ink else home.brimley.ui.theme.Paper)
+            .border(BorderStroke(Rules.thin, Ink), androidx.compose.foundation.shape.CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) { icon(if (filled) home.brimley.ui.theme.Paper else Ink) }
+}
+
+@Composable
+private fun PlayIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(22.dp)) {
+    val p = androidx.compose.ui.graphics.Path().apply { moveTo(size.width * 0.2f, 0f); lineTo(size.width, size.height / 2f); lineTo(size.width * 0.2f, size.height); close() }
+    drawPath(p, c)
+}
+
+@Composable
+private fun PauseIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(22.dp)) {
+    drawRect(c, topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.1f, 0f), size = androidx.compose.ui.geometry.Size(size.width * 0.3f, size.height))
+    drawRect(c, topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.6f, 0f), size = androidx.compose.ui.geometry.Size(size.width * 0.3f, size.height))
+}
+
+@Composable
+private fun NextIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(22.dp)) {
+    val p = androidx.compose.ui.graphics.Path().apply { moveTo(0f, 0f); lineTo(size.width * 0.7f, size.height / 2f); lineTo(0f, size.height); close() }
+    drawPath(p, c)
+    drawRect(c, topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.78f, 0f), size = androidx.compose.ui.geometry.Size(size.width * 0.22f, size.height))
+}
+
+@Composable
+private fun PrevIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(22.dp)) {
+    val p = androidx.compose.ui.graphics.Path().apply { moveTo(size.width, 0f); lineTo(size.width * 0.3f, size.height / 2f); lineTo(size.width, size.height); close() }
+    drawPath(p, c)
+    drawRect(c, topLeft = androidx.compose.ui.geometry.Offset(0f, 0f), size = androidx.compose.ui.geometry.Size(size.width * 0.22f, size.height))
 }
 
 @Composable
@@ -70,7 +119,7 @@ private fun NothingPlaying() {
 }
 
 @Composable
-private fun NowPlaying(p: Playing, big: Boolean) {
+private fun NowPlaying(p: Playing, big: Boolean, onControl: (String) -> Unit) {
     val coverSize = if (big) 150.dp else 84.dp
     Row(verticalAlignment = Alignment.Top) {
         Box(
@@ -97,6 +146,10 @@ private fun NowPlaying(p: Playing, big: Boolean) {
                 when (p.target) { "kitchen" -> "Kitchen speaker"; "tv" -> "Living room TV"; else -> "Yoto" },
                 filled = false,
             )
+            if (p.target == "kitchen") {
+                Spacer(Modifier.height(10.dp))
+                Transport(isPlaying = p.isPlaying, onControl = onControl)
+            }
         }
     }
 }

@@ -48,11 +48,13 @@ fun BrimleyApp(repository: TodayRepository) {
                         onClaimBounty = repository::claimBounty,
                         onPlaySomething = { screen = Screen.Play(PlayTab.Watch) },
                         onDrawNote = { screen = Screen.Note },
+                        onControl = repository::controlMusic,
                     )
                 }
             }
             is Screen.Play -> PlayScreen(
                 today = state.today,
+                repository = repository,
                 initialTab = s.tab,
                 onHome = { screen = Screen.Home },
             )

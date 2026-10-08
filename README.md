@@ -37,6 +37,9 @@ Routes (all take `Authorization: Bearer <token>` from `HOME_API_TOKENS`):
 | `POST /api/jobs/bounty/claim` | `{ row }` "I did it" on a bounty; writes `waiting` into the sheet |
 | `GET/POST /api/cards`, `DELETE /api/cards/:id` | Day cards; Zo posts the lunch menu here |
 | `POST /api/notes` | `{ png }` or `{ text }` from the stylus note screen |
+| `GET /api/music` | Crate's crates with their current picks, as shelves |
+| `POST /api/music/play` | `{ uri }` start an album on the kitchen speaker through Crate |
+| `POST /api/music/control` | `{ action }` resume, pause, next, previous |
 | `GET /api/cron/sync` | Daily: re-read the sheet and re-resolve every title |
 
 The lunch script on Zo:
@@ -77,7 +80,11 @@ builds a debug APK. It has not yet been run on a DC-1.
 ## Where things stand
 
 See `docs/PROPOSAL.md` for the plan and the milestones. Done: the app shell with the
-Woodcut look, the home screen, the stylus note, the Watch picker, and the backend for
-calendar, weather, jobs, bounties, cards and the sheet-driven catalog. Not yet: music
-through Crate (milestone 3), sending a title to the TV (milestone 5), Yoto and
-"Our makes" (milestone 6).
+Woodcut look, the home screen, the stylus note, the Watch picker, the backend for
+calendar, weather, jobs, bounties, cards and the sheet-driven catalog, and music
+through Crate (shelves, play on the kitchen speaker, transport). Not yet: sending a
+title to the TV (milestone 5), Yoto and "Our makes" (milestone 6).
+
+Music setup: in Crate, open the profile menu, Household Tokens, create one named
+"Kitchen tablet", and put it in `CRATE_TOKEN`. Set `CRATE_API_URL` to Crate's address
+and `KITCHEN_DEVICE_NAME` to part of the kitchen speaker's name in Spotify.

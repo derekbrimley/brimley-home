@@ -1,5 +1,7 @@
 package home.brimley.data
 
+import home.brimley.model.MusicShelf
+import home.brimley.model.Playing
 import home.brimley.model.Today
 import home.brimley.model.TodayJob
 import kotlinx.coroutines.CoroutineScope
@@ -96,6 +98,32 @@ class TodayRepository(private val api: HomeApi, cacheDir: File) {
             }))
         }
         scope.launch { runCatching { api.claimBounty(row) }.onFailure { refresh() } }
+    }
+
+    suspend fun musicShelves(): Result<List<MusicShelf>> =
+        if (!api.isConfigured) Result.success(SampleToday.shelves()) else runCatching { api.musicShelves() }
+
+    // Start an album on the kitchen speaker. The Playing card updates on the
+    // next refresh; the picker shows the error text if the speaker is off.
+    suspend fun playMusic(uri: String): Result<Unit> =
+        runCatching { api.playMusic(uri); refresh() }
+
+    fun controlMusic(action: String) {
+        val today = _state.value.today ?: return
+        // Optimistic pause/resume so the button flips under the finger.
+        val flipped = today.playing.map { p ->
+            if (p.target != "kitchen") p else when (action) {
+                "pause" -> p.copy(isPlaying = false)
+                "resume" -> p.copy(isPlaying = true)
+                else -> p
+            }
+        }
+        _state.update { it.copy(today = today.copy(playing = flipped)) }
+        scope.launch {
+            runCatching { api.controlMusic(action) }
+            delay(1_500)
+            refresh()
+        }
     }
 
     suspend fun postNote(base64Png: String): Boolean =

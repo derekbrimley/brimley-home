@@ -99,3 +99,17 @@ data class Today(
     val makes: List<Make> = emptyList(),
     val warnings: List<String> = emptyList(),
 )
+
+// Music shelves from GET /api/music (Crate's crates with their picks).
+@Serializable
+data class MusicShelf(val id: String, val name: String, val items: List<MusicItem>)
+
+@Serializable
+data class MusicItem(
+    val id: Int,
+    val title: String,
+    val creator: String,
+    val imageUrl: String? = null,
+    val uri: String,
+    val mediaType: String = "album",
+)

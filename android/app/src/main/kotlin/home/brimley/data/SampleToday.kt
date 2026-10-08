@@ -2,6 +2,8 @@ package home.brimley.data
 
 import home.brimley.model.CatalogItem
 import home.brimley.model.JobsBlock
+import home.brimley.model.MusicItem
+import home.brimley.model.MusicShelf
 import home.brimley.model.Playing
 import home.brimley.model.Today
 import home.brimley.model.TodayBounty
@@ -12,6 +14,25 @@ import home.brimley.model.Weather
 // The Monday from the mockups. Shown until the app is pointed at a backend,
 // and used by Compose previews.
 object SampleToday {
+    fun shelves(): List<MusicShelf> = listOf(
+        MusicShelf("favorites", "Favorites", listOf(
+            MusicItem(1, "Rumours", "Fleetwood Mac", uri = "spotify:album:1"),
+            MusicItem(2, "Harvest", "Neil Young", uri = "spotify:album:2"),
+            MusicItem(3, "Kind of Blue", "Miles Davis", uri = "spotify:album:3"),
+            MusicItem(4, "Graceland", "Paul Simon", uri = "spotify:album:4"),
+        )),
+        MusicShelf("new", "Something new", listOf(
+            MusicItem(5, "Pink Moon", "Nick Drake", uri = "spotify:album:5"),
+            MusicItem(6, "Another Green World", "Brian Eno", uri = "spotify:album:6"),
+            MusicItem(7, "Moondance", "Van Morrison", uri = "spotify:album:7"),
+        )),
+        MusicShelf("kids", "Kids' kitchen", listOf(
+            MusicItem(8, "Bluey the Album", "Bluey", uri = "spotify:album:8"),
+            MusicItem(9, "Here Come the ABCs", "They Might Be Giants", uri = "spotify:album:9"),
+            MusicItem(10, "Encanto", "Soundtrack", uri = "spotify:album:10"),
+        )),
+    )
+
     fun today(): Today = Today(
         generatedAt = "2026-10-12T13:42:00Z",
         date = "2026-10-12",

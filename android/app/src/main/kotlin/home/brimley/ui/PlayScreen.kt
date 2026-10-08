@@ -34,8 +34,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import home.brimley.data.TodayRepository
 import home.brimley.model.CatalogItem
+import home.brimley.model.MusicItem
+import home.brimley.model.MusicShelf
 import home.brimley.model.Today
+import kotlinx.coroutines.launch
 import home.brimley.ui.theme.Ink
 import home.brimley.ui.theme.Paper
 import home.brimley.ui.theme.PaperBright
@@ -51,9 +57,19 @@ enum class PlayTab(val label: String, val where: String) {
 // One picker, three tabs. Music and Stories fill in with milestones 3 and 6;
 // Watch shows the catalog now and the TV connection lands in milestone 5.
 @Composable
-fun PlayScreen(today: Today?, initialTab: PlayTab, onHome: () -> Unit) {
+fun PlayScreen(today: Today?, repository: TodayRepository, initialTab: PlayTab, onHome: () -> Unit) {
     var tab by remember { mutableStateOf(initialTab) }
     var pending by remember { mutableStateOf<CatalogItem?>(null) }
+    var shelves by remember { mutableStateOf<List<MusicShelf>?>(null) }
+    var musicError by remember { mutableStateOf<String?>(null) }
+    var musicNotice by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(tab) {
+        if (tab == PlayTab.Music && shelves == null) {
+            repository.musicShelves().onSuccess { shelves = it }.onFailure { musicError = it.message ?: "Couldn't reach Crate" }
+        }
+    }
 
     Column(Modifier.fillMaxSize().background(Paper)) {
         Row(
@@ -84,13 +100,80 @@ fun PlayScreen(today: Today?, initialTab: PlayTab, onHome: () -> Unit) {
         Box(Modifier.fillMaxSize()) {
             when (tab) {
                 PlayTab.Watch -> WatchShelves(today?.catalog.orEmpty(), onPick = { pending = it })
-                PlayTab.Music -> ComingSoon("Albums arrive when Crate is connected (milestone 3).")
+                PlayTab.Music -> MusicShelves(
+                    shelves = shelves,
+                    error = musicError,
+                    notice = musicNotice,
+                    onPick = { item ->
+                        musicNotice = "Starting ${item.title}…"
+                        scope.launch {
+                            repository.playMusic(item.uri)
+                                .onSuccess { musicNotice = "${item.title} is playing in the kitchen"; onHome() }
+                                .onFailure { musicNotice = null; musicError = it.message ?: "Couldn't start it" }
+                        }
+                    },
+                )
                 PlayTab.Stories -> ComingSoon("Yoto cards arrive in milestone 6.")
             }
             pending?.let { item ->
                 ConfirmPlay(item, onCancel = { pending = null }, onPlay = { pending = null /* milestone 5: send to the TV */ })
             }
         }
+    }
+}
+
+@Composable
+private fun MusicShelves(shelves: List<MusicShelf>?, error: String?, notice: String?, onPick: (MusicItem) -> Unit) {
+    when {
+        shelves == null && error == null -> ComingSoon("Looking in the crates…")
+        shelves == null -> ComingSoon(error ?: "")
+        shelves.isEmpty() -> ComingSoon("No crates yet. Add albums in Crate and they show up here.")
+        else -> LazyColumn(Modifier.fillMaxSize().padding(horizontal = 30.dp, vertical = 14.dp)) {
+            (notice ?: error)?.let { line ->
+                item(key = "notice") { Text(line, style = MaterialTheme.typography.titleMedium, color = Ink, modifier = Modifier.padding(bottom = 10.dp)) }
+            }
+            shelves.forEach { shelf ->
+                if (shelf.items.isEmpty()) return@forEach
+                item(key = "h-${shelf.id}") {
+                    Text(shelf.name, style = MaterialTheme.typography.titleLarge, color = Ink, modifier = Modifier.padding(top = 10.dp, bottom = 8.dp))
+                }
+                item(key = "r-${shelf.id}") {
+                    Column {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                            items(shelf.items, key = { it.id }) { Cover(it, onClick = { onPick(it) }) }
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        HorizontalDivider(thickness = 5.dp, color = Ink)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Albums start on a tap. No confirmation: a wrong album in the kitchen costs
+// nothing, and the point is that a kid can do it in one go.
+@Composable
+private fun Cover(item: MusicItem, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.width(170.dp).clickable(onClick = onClick)) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(shape)
+                .background(PaperBright)
+                .border(BorderStroke(4.dp, Ink), shape),
+        ) {
+            if (item.imageUrl != null) {
+                AsyncImage(model = item.imageUrl, contentDescription = item.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            } else {
+                RecordIllustration(Modifier.fillMaxSize().padding(18.dp))
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(item.title, style = MaterialTheme.typography.labelLarge, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(item.creator, style = MaterialTheme.typography.bodySmall, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

@@ -280,9 +280,11 @@ RLS on, service role from the API, as in Crate.
   all-done stamp and star burst, Watch picker with confirmation, stylus note screen,
   night clock, boot receiver, kiosk flags. Builds a debug APK; not yet run on the
   DC-1.
-- Not started: Crate household token and the Music tab (milestone 3), sending a
-  title to the TV over the Android TV remote protocol (milestone 5), Yoto and
-  Our makes (milestone 6).
+- Music (milestone 3): Crate has household tokens (read + play, created from its
+  profile menu). The dashboard's `/api/music` proxies Crate's crates and starts
+  albums on the kitchen speaker; the Playing card has pause, next and previous.
+- Not started: sending a title to the TV over the Android TV remote protocol
+  (milestone 5), Yoto and Our makes (milestone 6).
 
 ## Build order
 
