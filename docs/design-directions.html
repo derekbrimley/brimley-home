@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brimley Home Directions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Fredoka:wght@400;500;600;700&family=Caveat:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=Alfa+Slab+One&family=Young+Serif&family=Schibsted+Grotesk:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: a single long review page. Each direction is a 4:3 mockup of the DC-1 screen
+   (authored at 800x600, scaled to fit) followed by short notes. Chrome stays quiet so the
+   five mockups carry all the personality. */
+:root {
+  --bg: #f6f5f1;
+  --fg: #1b1b19;
+  --muted: #5e5d58;
+  --rule: #d9d7d0;
+  --card: #ffffff;
+  --bezel: #2a2a28;
+  --paper: #e8e7e2;   /* what "white" looks like on a reflective LCD */
+  --ink: #141413;
+  --font-chrome: "Schibsted Grotesk", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg:#15151a; --fg:#ecebe6; --muted:#a5a49c; --rule:#33333a; --card:#1d1d23; --bezel:#000; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg:#15151a; --fg:#ecebe6; --muted:#a5a49c; --rule:#33333a; --card:#1d1d23; --bezel:#000; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--font-chrome); margin: 0; padding-inline: 16px; padding-block: 32px 80px; line-height: 1.5; }
+.wrap { max-width: 980px; margin: 0 auto; }
+h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; margin: 0 0 12px; text-wrap: balance; }
+h2 { font-size: clamp(22px, 3.5vw, 30px); font-weight: 800; letter-spacing: -0.015em; margin: 0 0 4px; text-wrap: balance; }
+h3 { font-size: 16px; font-weight: 700; margin: 0 0 6px; }
+p { margin: 0 0 12px; max-width: 68ch; }
+.lede { font-size: 18px; color: var(--muted); max-width: 62ch; }
+.intro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px 28px; margin: 28px 0 8px; padding: 20px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.intro-grid div { min-width: 0; }
+.intro-grid b { display: block; font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 2px; }
+.intro-grid span { font-size: 15px; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 48px; padding: 0; list-style: none; }
+.toc a { display: inline-block; padding: 6px 12px; border: 1px solid var(--rule); border-radius: 999px; color: var(--fg); text-decoration: none; font-size: 14px; background: var(--card); }
+.toc a:hover, .toc a:focus-visible { border-color: var(--fg); outline: none; }
+section.dir { margin: 0 0 72px; scroll-margin-top: 16px; }
+.dir-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+.dir-head .n { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.thesis { color: var(--muted); font-size: 17px; margin-bottom: 18px; max-width: 70ch; }
+
+/* The device frame. The screen is authored at 800x600 and scaled by JS to the frame width. */
+.frame { position: relative; width: 100%; max-width: 820px; background: var(--bezel); border-radius: 14px; padding: 10px; box-sizing: border-box; box-shadow: 0 1px 0 rgba(0,0,0,.2), 0 18px 40px -20px rgba(0,0,0,.45); }
+.frame::after { content: ""; position: absolute; inset: 10px; border-radius: 4px; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.viewport { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 3px; background: var(--paper); }
+.screen { position: absolute; left: 0; top: 0; width: 800px; height: 600px; transform-origin: 0 0; background: var(--paper); color: var(--ink); overflow: hidden; filter: grayscale(1); box-sizing: border-box; }
+.screen * { box-sizing: border-box; }
+.screen svg { display: block; }
+.caption { font-size: 13px; color: var(--muted); margin: 10px 0 22px; }
+
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px 28px; }
+.notes div { min-width: 0; }
+.notes p { font-size: 15px; margin: 0; }
+.notes ul { margin: 0; padding-left: 18px; font-size: 15px; }
+.notes li { margin-bottom: 4px; }
+
+.verdict { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 22px 24px; margin: 8px 0 72px; }
+.verdict p { max-width: 72ch; }
+.plain-list { padding-left: 20px; }
+.plain-list li { margin-bottom: 8px; max-width: 70ch; }
+table.arch { border-collapse: collapse; width: 100%; font-size: 14.5px; margin: 10px 0 24px; }
+table.arch th, table.arch td { text-align: left; vertical-align: top; padding: 9px 10px 9px 0; border-bottom: 1px solid var(--rule); }
+table.arch th { font-weight: 700; white-space: nowrap; width: 150px; }
+.ideas { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin: 14px 0 24px; }
+.idea { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.idea h3 { margin-bottom: 4px; }
+.idea p { font-size: 14.5px; margin: 0; color: var(--fg); }
+.idea .tag { display: inline-block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.92em; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+/* ───────────── Shared cover-art stand-ins (no external images allowed) ───────────── */
+.cov { background-color: #fff; border: 1.5px solid var(--ink); }
+.cov-stripes { background-image: repeating-linear-gradient(135deg, #111 0 6px, #fff 6px 14px); }
+.cov-rings  { background-image: radial-gradient(circle at 50% 50%, #111 0 8%, #fff 8% 20%, #111 20% 28%, #fff 28% 40%, #111 40% 46%, #fff 46%); }
+.cov-dots   { background-image: radial-gradient(circle, #111 34%, transparent 36%); background-size: 12px 12px; }
+.cov-check  { background-image: linear-gradient(45deg, #111 25%, transparent 25%, transparent 75%, #111 75%), linear-gradient(45deg, #111 25%, #fff 25%, #fff 75%, #111 75%); background-size: 18px 18px; background-position: 0 0, 9px 9px; }
+.cov-wave   { background-image: repeating-radial-gradient(circle at 0 100%, #fff 0 10px, #111 10px 14px); }
+.cov-grad   { background-image: linear-gradient(180deg, #fff, #111); }
+
+/* ═══════════════ 1. ALMANAC ═══════════════ */
+.alm { font-family: "Libre Caslon Text", Georgia, serif; padding: 22px 30px 18px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 10px; }
+.alm .mast { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; border-bottom: 3px double var(--ink); padding-bottom: 6px; }
+.alm .mast .l, .alm .mast .r { font-size: 10.5px; letter-spacing: .02em; font-style: italic; white-space: nowrap; }
+.alm .mast .r { text-align: right; }
+.alm .mast h1 { font-family: "Old Standard TT", "Libre Caslon Text", serif; font-weight: 700; font-size: 28px; letter-spacing: .07em; margin: 0; text-align: center; line-height: 1; padding: 0 12px; }
+.alm .ephem { display: flex; justify-content: space-between; font-size: 12px; font-style: italic; border-bottom: 1px solid var(--ink); padding-bottom: 6px; }
+.alm .ephem b { font-style: normal; font-weight: 400; font-variant: small-caps; letter-spacing: .06em; }
+.alm .cols { display: grid; grid-template-columns: 1.1fr 1fr 1.15fr; gap: 0 18px; min-height: 0; }
+.alm .col + .col { border-left: 1px solid var(--ink); padding-left: 18px; }
+.alm h2 { font-family: "Old Standard TT", serif; font-size: 15px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin: 6px 0 8px; text-align: center; }
+.alm h2::after { content: ""; display: block; width: 36px; height: 1px; background: var(--ink); margin: 6px auto 0; }
+.alm .ev { display: grid; grid-template-columns: 64px 1fr; gap: 8px; font-size: 14px; line-height: 1.35; padding: 5px 0; border-bottom: 1px dotted #777; }
+.alm .ev .t { font-variant-numeric: tabular-nums; font-size: 13px; }
+.alm .ev i { color: #333; font-size: 12px; display: block; }
+.alm .chk { display: flex; align-items: baseline; gap: 9px; font-size: 14px; padding: 6px 0; }
+.alm .chk .box { width: 14px; height: 14px; border: 1.5px solid var(--ink); flex: 0 0 auto; position: relative; top: 2px; }
+.alm .chk .box.on::after { content: ""; position: absolute; inset: 2px; background: var(--ink); }
+.alm .chk small { font-size: 11px; color: #333; font-style: italic; }
+.alm .np { display: grid; grid-template-columns: 74px 1fr; gap: 12px; align-items: center; margin-bottom: 8px; }
+.alm .np .cov { width: 74px; height: 74px; }
+.alm .np .title { font-size: 15px; font-weight: 700; line-height: 1.2; }
+.alm .np .by { font-size: 12.5px; font-style: italic; }
+.alm .np .track { font-size: 11.5px; margin-top: 4px; }
+.alm .btnrow { display: flex; gap: 8px; margin: 6px 0 10px; }
+.alm .btn { border: 1.5px solid var(--ink); padding: 7px 10px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; font-family: "Old Standard TT", serif; flex: 1; text-align: center; }
+.alm .btn.fill { background: var(--ink); color: var(--paper); }
+.alm .tv { font-size: 13px; padding: 5px 0; border-bottom: 1px dotted #777; display: flex; justify-content: space-between; gap: 8px; }
+.alm .tv i { font-size: 11px; white-space: nowrap; }
+.alm .lunch { border: 1.5px solid var(--ink); padding: 8px 12px 10px; display: grid; grid-template-columns: 170px 1fr; gap: 14px; align-items: center; }
+.alm .lunch h2 { text-align: left; margin: 0 0 2px; }
+.alm .lunch h2::after { margin-left: 0; }
+.alm .lunch p { font-size: 12px; font-style: italic; margin: 0; line-height: 1.3; }
+.alm .week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.alm .day { text-align: center; font-size: 12px; line-height: 1.25; }
+.alm .day b { display: block; font-variant: small-caps; letter-spacing: .08em; font-weight: 400; font-size: 13px; margin-bottom: 3px; }
+.alm .day .box { display: block; width: 18px; height: 18px; border: 1.5px solid var(--ink); margin: 6px auto 0; position: relative; }
+.alm .day .box.on::after { content: ""; position: absolute; inset: 3px; background: var(--ink); }
+
+/* ═══════════════ 2. FRIDGE DOOR ═══════════════ */
+.fr { font-family: "Fredoka", "Nunito", system-ui, sans-serif; background-image: radial-gradient(circle, rgba(0,0,0,.06) 1px, transparent 1.4px); background-size: 8px 8px; }
+.fr .clock { position: absolute; left: 30px; top: 18px; font-weight: 700; font-size: 60px; line-height: 1; letter-spacing: -0.03em; }
+.fr .date { position: absolute; left: 32px; top: 84px; font-size: 19px; font-weight: 500; }
+.fr .wx { position: absolute; left: 32px; top: 112px; font-family: "Caveat", cursive; font-size: 24px; font-weight: 700; transform: rotate(-2deg); transform-origin: left; }
+.fr .card { position: absolute; background: #fff; border: 1.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 14px 16px; }
+.fr .mag { position: absolute; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); top: -10px; left: 50%; margin-left: -10px; box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 5px var(--ink); }
+.fr .today { left: 30px; top: 158px; width: 300px; height: 262px; background-image: repeating-linear-gradient(180deg, transparent 0 27px, #bbb 27px 28px); background-position: 0 38px; }
+.fr .card h2 { font-size: 20px; font-weight: 700; margin: 0 0 10px; }
+.fr .ev { display: grid; grid-template-columns: 60px 1fr; gap: 10px; font-size: 16px; line-height: 28px; }
+.fr .ev .t { font-weight: 600; font-variant-numeric: tabular-nums; }
+.fr .ev span .who { display: inline-block; font-size: 12px; font-weight: 600; border: 1.5px solid var(--ink); border-radius: 999px; padding: 0 7px; line-height: 17px; margin-left: 6px; vertical-align: 2px; }
+.fr .sticky { position: absolute; left: 352px; top: 150px; width: 232px; height: 230px; background: #fff; padding: 16px 16px; transform: rotate(2deg); box-shadow: 2px 3px 0 var(--ink); border: 1.5px solid var(--ink); }
+.fr .sticky::before { content: ""; position: absolute; left: 50%; top: -9px; width: 70px; height: 18px; margin-left: -35px; background: repeating-linear-gradient(90deg, #ccc 0 3px, #eee 3px 6px); border: 1px solid #888; }
+.fr .sticky h2 { font-family: "Caveat", cursive; font-size: 28px; margin: 0 0 6px; }
+.fr .chk { display: flex; align-items: center; gap: 10px; font-size: 17px; padding: 7px 0; }
+.fr .chk .box { width: 24px; height: 24px; border: 2px solid var(--ink); border-radius: 6px; flex: 0 0 auto; position: relative; }
+.fr .chk .box.on::after { content: ""; position: absolute; left: 6px; top: 1px; width: 7px; height: 13px; border: solid var(--ink); border-width: 0 3px 3px 0; transform: rotate(45deg); }
+.fr .chk.done { text-decoration: line-through; color: #555; }
+.fr .polaroid { position: absolute; right: 36px; top: 20px; width: 190px; background: #fff; border: 1.5px solid var(--ink); padding: 10px 10px 12px; transform: rotate(-3deg); box-shadow: 3px 3px 0 var(--ink); }
+.fr .polaroid .cov { width: 100%; height: 140px; }
+.fr .polaroid .cap { font-family: "Caveat", cursive; font-size: 21px; line-height: 1.1; margin-top: 8px; text-align: center; }
+.fr .polaroid .cap small { display: block; font-size: 16px; font-weight: 500; }
+.fr .dock { position: absolute; left: 30px; right: 30px; bottom: 22px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.fr .big { border: 2.5px solid var(--ink); border-radius: 22px; background: #fff; height: 128px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 19px; font-weight: 600; box-shadow: 0 4px 0 var(--ink); }
+.fr .big.on { background: var(--ink); color: #fff; box-shadow: none; transform: translateY(4px); }
+.fr .big svg { width: 46px; height: 46px; }
+.fr .big small { font-size: 12px; font-weight: 500; opacity: .85; }
+.fr .flyer { position: absolute; right: 36px; top: 232px; width: 190px; background: #fff; border: 1.5px solid var(--ink); padding: 12px 12px 10px; transform: rotate(1.5deg); box-shadow: 3px 3px 0 var(--ink); font-size: 12px; }
+.fr .flyer h2 { font-size: 15px; margin: 0 0 6px; line-height: 1.15; }
+.fr .flyer .row { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 2px 0; border-bottom: 1px dotted #999; line-height: 1.3; }
+.fr .flyer .row b { font-weight: 600; width: 32px; }
+.fr .flyer .row span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fr .flyer .row .box { flex: 0 0 auto; width: 16px; height: 16px; border: 2px solid var(--ink); border-radius: 4px; position: relative; }
+.fr .flyer .row .box.on::after { content: ""; position: absolute; left: 3px; top: 0px; width: 4px; height: 8px; border: solid var(--ink); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+.fr .flyer .hint { font-family: "Caveat", cursive; font-size: 16px; margin-top: 5px; line-height: 1.05; }
+
+/* ═══════════════ 3. FIELD GUIDE ═══════════════ */
+.fg { font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif; background-image: radial-gradient(circle, rgba(0,0,0,.28) 0.8px, transparent 1.2px); background-size: 16px 16px; padding: 16px 20px; display: grid; grid-template-rows: 38px 1fr 96px; gap: 14px; }
+.fg .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+.fg .top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+.fg .top .d { font-family: "IBM Plex Mono", monospace; font-size: 20px; font-weight: 600; letter-spacing: .02em; }
+.fg .top .d span { font-weight: 400; margin-left: 10px; font-size: 15px; }
+.fg .top .w { font-family: "IBM Plex Mono", monospace; font-size: 13px; display: flex; gap: 16px; align-items: center; }
+.fg .mid { display: grid; grid-template-columns: 236px 1fr 236px; gap: 16px; min-height: 0; overflow: hidden; }
+.fg .mod { border: 1.5px solid var(--ink); background: rgba(255,255,255,.72); padding: 10px 12px; position: relative; overflow: hidden; }
+.fg h2 { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; margin: 0 0 8px; display: flex; justify-content: space-between; }
+.fg h2 span { font-weight: 400; }
+.fg .tl { position: relative; height: 348px; margin-left: 38px; border-left: 1.5px solid var(--ink); }
+.fg .hr { position: absolute; left: -38px; right: 0; height: 0; border-top: 1px solid #888; font-family: "IBM Plex Mono", monospace; font-size: 10px; }
+.fg .hr span { position: absolute; left: 0; top: -6px; background: transparent; }
+.fg .blk { position: absolute; left: 8px; right: 0; border: 1.5px solid var(--ink); background: #fff; padding: 2px 7px; font-size: 12px; line-height: 1.15; overflow: hidden; min-height: 32px; }
+.fg .blk b { display: block; font-weight: 600; }
+.fg .blk.fill { background: var(--ink); color: var(--paper); }
+.fg .blk.hatch { background-image: repeating-linear-gradient(135deg, transparent 0 5px, rgba(0,0,0,.18) 5px 6px); }
+.fg .task { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid #999; font-size: 15px; }
+.fg .task .box { width: 18px; height: 18px; border: 1.5px solid var(--ink); position: relative; }
+.fg .task .box.on { background: var(--ink); }
+.fg .task .box.on::after { content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px; border: solid var(--paper); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.fg .task .who { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--ink); padding: 2px 6px; }
+.fg .task.done { color: #555; text-decoration: line-through; }
+.fg .stamp { display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; border: 1.5px solid var(--ink); padding: 3px 8px; transform: rotate(-3deg); margin-top: 10px; }
+.fg .np { display: grid; grid-template-columns: 56px 1fr; gap: 10px; }
+.fg .np .cov { width: 56px; height: 56px; }
+.fg .np .t { font-weight: 600; font-size: 15px; line-height: 1.15; }
+.fg .np .a { font-size: 13px; }
+.fg .bar { height: 6px; border: 1px solid var(--ink); margin: 6px 0 3px; position: relative; }
+.fg .bar::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 58%; background: var(--ink); }
+.fg .times { display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace; font-size: 10px; }
+.fg .tr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0 8px; }
+.fg .tr div { border: 1.5px solid var(--ink); height: 30px; display: flex; align-items: center; justify-content: center; }
+.fg .tr div svg { width: 16px; height: 16px; }
+.fg .btn { border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper); font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 7px; text-align: center; }
+.fg .btn.ghost { background: transparent; color: var(--ink); }
+.fg .opt { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #999; display: flex; justify-content: space-between; gap: 6px; }
+.fg .opt small { font-family: "IBM Plex Mono", monospace; font-size: 10px; white-space: nowrap; }
+.fg .bottom { border: 1.5px solid var(--ink); background: rgba(255,255,255,.72); display: grid; grid-template-columns: 150px repeat(5, 1fr); align-items: stretch; }
+.fg .bottom .lab { padding: 10px 12px; border-right: 1.5px solid var(--ink); }
+.fg .bottom .lab h2 { margin: 0 0 4px; }
+.fg .bottom .lab p { font-size: 12px; margin: 0; line-height: 1.25; }
+.fg .bottom .d { padding: 8px 10px; border-right: 1px solid #999; font-size: 12.5px; line-height: 1.2; display: flex; flex-direction: column; justify-content: space-between; }
+.fg .bottom .d:last-child { border-right: 0; }
+.fg .bottom .d b { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .1em; font-weight: 600; }
+.fg .bottom .d .box { width: 22px; height: 22px; border: 1.5px solid var(--ink); }
+.fg .bottom .d .box.on { background: var(--ink); }
+
+/* ═══════════════ 4. WOODCUT ═══════════════ */
+.wc { font-family: "Young Serif", Georgia, serif; border: 8px solid var(--ink); display: grid; grid-template-rows: 108px minmax(0, 1fr) 80px; }
+.wc .disp { font-family: "Alfa Slab One", "Young Serif", serif; }
+.wc .band { background: var(--ink); color: var(--paper); display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 0 22px; gap: 20px; }
+.wc .band h1 { font-family: "Alfa Slab One", serif; font-size: 56px; margin: 0; line-height: 1; letter-spacing: .01em; }
+.wc .band .sub { font-size: 16px; margin-top: 4px; }
+.wc .band .wx { display: flex; align-items: center; gap: 14px; text-align: right; }
+.wc .band .wx svg { width: 68px; height: 68px; }
+.wc .band .wx b { font-family: "Alfa Slab One", serif; font-size: 34px; display: block; line-height: 1; }
+.wc .band .wx span { font-size: 14px; }
+.wc .tiles { display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; overflow: hidden; }
+.wc .tile { border-right: 5px solid var(--ink); border-bottom: 5px solid var(--ink); padding: 12px 16px; position: relative; overflow: hidden; }
+.wc .tile:nth-child(3n) { border-right: 0; }
+.wc .tile:nth-child(n+4) { border-bottom: 0; }
+.wc .tile h2 { font-family: "Alfa Slab One", serif; font-size: 20px; margin: 0 0 8px; }
+.wc .tile.today { grid-row: span 2; }
+.wc .ev { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: baseline; padding: 7px 0; border-bottom: 2px solid var(--ink); font-size: 15px; line-height: 1.2; }
+.wc .ev b { font-family: "Alfa Slab One", serif; font-size: 16px; font-variant-numeric: tabular-nums; }
+.wc .ev i { display: block; font-size: 12px; font-style: normal; }
+.wc .chk { display: flex; gap: 10px; align-items: center; font-size: 14px; padding: 6px 0; max-width: 150px; }
+.wc .chk .box { width: 24px; height: 24px; border: 3px solid var(--ink); flex: 0 0 auto; position: relative; }
+.wc .chk .box.on { background: var(--ink); }
+.wc .chk .box.on::after { content: ""; position: absolute; left: 6px; top: 0px; width: 6px; height: 12px; border: solid var(--paper); border-width: 0 3px 3px 0; transform: rotate(45deg); }
+.wc .art { position: absolute; right: 8px; bottom: 6px; width: 96px; height: 96px; }
+.wc .halftone { background-image: radial-gradient(circle, #111 1.6px, transparent 1.9px); background-size: 6px 6px; }
+.wc .cta { position: absolute; left: 16px; bottom: 14px; background: var(--ink); color: var(--paper); font-family: "Alfa Slab One", serif; font-size: 15px; padding: 10px 14px; border: 3px solid var(--ink); }
+.wc .cta.ghost { background: var(--paper); color: var(--ink); }
+.wc .np { font-size: 14px; line-height: 1.25; max-width: 140px; }
+.wc .np b { display: block; font-size: 16px; }
+.wc .foot { background: var(--ink); color: var(--paper); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 0 18px; }
+.wc .foot .t { font-family: "Alfa Slab One", serif; font-size: 17px; line-height: 1.1; }
+.wc .foot .week { display: flex; gap: 8px; }
+.wc .foot .day { border: 2px solid var(--paper); padding: 4px 8px; font-size: 11.5px; line-height: 1.15; min-width: 88px; }
+.wc .foot .day b { font-family: "Alfa Slab One", serif; display: block; font-size: 11px; letter-spacing: .06em; }
+.wc .foot .day.on { background: var(--paper); color: var(--ink); }
+.wc .foot .go { font-family: "Alfa Slab One", serif; font-size: 13px; border: 2px solid var(--paper); padding: 8px 10px; }
+
+/* ═══════════════ 5. TIMETABLE ═══════════════ */
+.tt { font-family: "Schibsted Grotesk", system-ui, sans-serif; padding: 24px 30px 22px; display: grid; grid-template-rows: auto auto 1fr; gap: 18px; }
+.tt .hdr { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 24px; }
+.tt .hdr .time { font-size: 72px; font-weight: 800; line-height: .9; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.tt .hdr .date { font-size: 20px; font-weight: 500; line-height: 1.15; }
+.tt .hdr .date small { display: block; font-size: 14px; font-weight: 400; color: #333; }
+.tt .hdr .wx { text-align: right; font-size: 14px; line-height: 1.2; }
+.tt .hdr .wx b { font-size: 26px; font-weight: 700; display: block; }
+.tt .board { border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); padding: 10px 0 12px; }
+.tt .axis { position: relative; height: 16px; margin-bottom: 6px; }
+.tt .axis span { position: absolute; top: 0; font-size: 10px; font-weight: 500; font-variant-numeric: tabular-nums; transform: translateX(-50%); color: #333; }
+.tt .lane { position: relative; height: 30px; margin-top: 6px; }
+.tt .lane .who { position: absolute; left: 0; top: 7px; font-size: 12px; font-weight: 700; width: 60px; }
+.tt .lane .bar { position: absolute; top: 0; height: 30px; background: var(--ink); color: var(--paper); font-size: 12px; font-weight: 500; padding: 0 8px; line-height: 30px; white-space: nowrap; overflow: hidden; }
+.tt .lane .bar.light { background: #fff; color: var(--ink); border: 1.5px solid var(--ink); line-height: 27px; }
+.tt .lane .now { position: absolute; top: -8px; bottom: -8px; width: 2px; background: var(--ink); }
+.tt .lane .now::before { content: ""; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); }
+.tt .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; min-height: 0; }
+.tt h2 { font-size: 13px; font-weight: 700; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1.5px solid var(--ink); display: flex; justify-content: space-between; }
+.tt h2 span { font-weight: 400; color: #333; }
+.tt .row { display: grid; grid-template-columns: 24px 1fr auto; gap: 10px; align-items: center; font-size: 15px; padding: 7px 0; border-bottom: 1px solid #aaa; }
+.tt .row .box { width: 20px; height: 20px; border: 1.5px solid var(--ink); border-radius: 50%; position: relative; }
+.tt .row .box.on { background: var(--ink); }
+.tt .row .who { font-size: 11px; font-weight: 700; }
+.tt .row.done { color: #555; text-decoration: line-through; }
+.tt .np { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; }
+.tt .np .cov { width: 64px; height: 64px; }
+.tt .np b { display: block; font-size: 15px; line-height: 1.2; }
+.tt .np span { font-size: 13px; }
+.tt .np small { display: block; font-size: 11px; color: #333; margin-top: 3px; }
+.tt .act { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.tt .act div { border: 1.5px solid var(--ink); text-align: center; font-size: 13px; font-weight: 700; padding: 11px 6px; }
+.tt .act div.fill { background: var(--ink); color: var(--paper); }
+.tt .act div.wide { grid-column: span 2; }
+.tt .opt { display: grid; grid-template-columns: 1fr auto; gap: 8px; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #aaa; }
+.tt .opt small { font-size: 11px; font-weight: 700; }
+.tt .lunch { grid-column: span 3; display: grid; grid-template-columns: 180px repeat(5, 1fr); gap: 10px; align-items: start; border-top: 1.5px solid var(--ink); padding-top: 10px; align-self: end; }
+.tt .lunch .lab b { display: block; font-size: 14px; font-weight: 700; }
+.tt .lunch .lab span { font-size: 12px; color: #333; line-height: 1.25; display: block; }
+.tt .lunch .d { font-size: 12.5px; line-height: 1.2; }
+.tt .lunch .d b { display: block; font-size: 11px; font-weight: 700; margin-bottom: 2px; }
+.tt .lunch .d .box { display: block; width: 22px; height: 22px; border: 1.5px solid var(--ink); border-radius: 50%; margin-top: 6px; }
+.tt .lunch .d .box.on { background: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<h1>Five directions for the Brimley family dashboard</h1>
+<p class="lede">The same Monday morning, drawn five ways for the Daylight DC-1 in the kitchen. Every mockup is rendered in grayscale at the screen's 4:3 shape, so what you see is close to what the panel will show. Pick the one that feels like your house, or point at the pieces you want combined.</p>
+
+<div class="intro-grid">
+  <div><b>Screen</b><span>10.5", 1600 × 1200, reflective grayscale, 60 fps, stylus</span></div>
+  <div><b>Distance</b><span>Read from across the counter, tapped by a 7-year-old</span></div>
+  <div><b>Sample day</b><span>Monday 12 Oct, 7:42 am, 48° and cloudy, lunch menu week</span></div>
+  <div><b>Rule for all five</b><span>Black ink and white paper only. State is shown by fill, weight and outline, never by a color.</span></div>
+</div>
+
+<ul class="toc">
+  <li><a href="#almanac">1. Almanac</a></li>
+  <li><a href="#fridge">2. Fridge Door</a></li>
+  <li><a href="#fieldguide">3. Field Guide</a></li>
+  <li><a href="#woodcut">4. Woodcut</a></li>
+  <li><a href="#timetable">5. Timetable</a></li>
+  <li><a href="#verdict">My pick</a></li>
+  <li><a href="#build">How it gets built</a></li>
+  <li><a href="#ideas">Other ideas</a></li>
+</ul>
+
+<!-- ═══════════════════════ 1. ALMANAC ═══════════════════════ -->
+<section class="dir" id="almanac">
+  <div class="dir-head"><span class="n">Direction 1</span><h2>Almanac</h2></div>
+  <p class="thesis">A small-town daily, printed fresh each morning. Masthead, sunrise and moon, three columns, a boxed notice at the bottom. It treats the family's day as something worth setting in type.</p>
+  <div class="frame"><div class="viewport"><div class="screen alm">
+    <div class="mast">
+      <div class="l">Vol. I, No. 12 · Printed at 7:42</div>
+      <h1>THE BRIMLEY ALMANAC</h1>
+      <div class="r">Monday, 12 October 2026</div>
+    </div>
+    <div class="ephem">
+      <span><b>Sunrise</b> 7:38 &nbsp; <b>Sunset</b> 6:48 &nbsp; <b>Moon</b> waxing crescent</span>
+      <span>48°, clouds thinning by noon. Jacket weather.</span>
+    </div>
+    <div class="cols">
+      <div class="col">
+        <h2>The Day</h2>
+        <div class="ev"><span class="t">9:00–3:00</span><span>School <i>Sylvie</i></span></div>
+        <div class="ev"><span class="t">12:30</span><span>Dentist <i>Dad</i></span></div>
+        <div class="ev"><span class="t">4:00</span><span>Piano lesson <i>Sylvie · Mrs. Okafor</i></span></div>
+        <div class="ev"><span class="t">5:30</span><span>Dinner at Grandma's <i>Everyone · bring the pie dish</i></span></div>
+        <div class="ev"><span class="t">Tonight</span><span>Recycling goes out</span></div>
+      </div>
+      <div class="col">
+        <h2>To Be Done</h2>
+        <div class="chk"><span class="box on"></span><span>Feed Juniper <small>Sylvie</small></span></div>
+        <div class="chk"><span class="box"></span><span>Practice piano, 15 min <small>Sylvie</small></span></div>
+        <div class="chk"><span class="box"></span><span>Pack library books <small>Sylvie · due Wed</small></span></div>
+        <div class="chk"><span class="box"></span><span>Water the fern <small>Anyone</small></span></div>
+        <div class="chk"><span class="box"></span><span>Sign the field-trip form <small>Dad</small></span></div>
+      </div>
+      <div class="col">
+        <h2>In the Kitchen</h2>
+        <div class="np">
+          <div class="cov cov-rings"></div>
+          <div><div class="title">Blue</div><div class="by">Joni Mitchell</div><div class="track">▶ California · 2:14 / 3:48</div></div>
+        </div>
+        <div class="btnrow"><span class="btn">Pause</span><span class="btn fill">Pick an album</span></div>
+        <h2>On the Television</h2>
+        <div class="tv"><span>Bluey</span><i>Disney+</i></div>
+        <div class="tv"><span>Kiki's Delivery Service</span><i>Max</i></div>
+        <div class="tv"><span>Backyard squirrel maze</span><i>YouTube</i></div>
+        <div class="tv"><span>Wow in the World</span><i>Podcast</i></div>
+      </div>
+    </div>
+    <div class="lunch">
+      <div><h2>School Luncheon</h2><p>The week's menu. Sylvie marks the days she will buy.</p></div>
+      <div class="week">
+        <div class="day"><b>Mon</b>Cheese pizza<span class="box"></span></div>
+        <div class="day"><b>Tue</b>Chicken nuggets<span class="box on"></span></div>
+        <div class="day"><b>Wed</b>Taco bar<span class="box"></span></div>
+        <div class="day"><b>Thu</b>Mac &amp; cheese<span class="box on"></span></div>
+        <div class="day"><b>Fri</b>Bean burrito<span class="box"></span></div>
+      </div>
+    </div>
+  </div></div></div>
+  <p class="caption">Type: Old Standard TT for the masthead and headings, Libre Caslon Text for everything else.</p>
+  <div class="notes">
+    <div><h3>What it does well</h3><p>Looks exactly like what the paper screen wants to be. Calm, dense, and genuinely nice to glance at. A day-specific notice (lunch menu, snow day, birthday) slots in as a boxed "announcement" without changing the layout.</p></div>
+    <div><h3>Watch out</h3><p>It is a reading layout, not a tapping one. The buttons are small and the album picker would have to become its own full page. Kids will read it with help, not drive it alone. The broadsheet look is also a common default right now, so it needs its own details (the ephemeris line, the notice box) to feel like yours.</p></div>
+    <div><h3>How a kid uses it</h3><p>Tap a checkbox to mark a chore. Tap "Pick an album" and a page of six covers appears, laid out like a classified page. The TV list opens the same way.</p></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ 2. FRIDGE DOOR ═══════════════════════ -->
+<section class="dir" id="fridge">
+  <div class="dir-head"><span class="n">Direction 2</span><h2>Fridge Door</h2></div>
+  <p class="thesis">Index cards, a sticky note, a polaroid and a school flyer, all held up with magnets. The screen becomes the thing the fridge door already is, with a row of big chunky buttons a child can hit without aiming.</p>
+  <div class="frame"><div class="viewport"><div class="screen fr">
+    <div class="clock">7:42</div>
+    <div class="date">Monday, October 12</div>
+    <div class="wx">48° and cloudy — jacket weather!</div>
+
+    <div class="card today"><span class="mag"></span>
+      <h2>Today</h2>
+      <div class="ev"><span class="t">9:00</span><span>School<span class="who">Sylvie</span></span></div>
+      <div class="ev"><span class="t">12:30</span><span>Dentist<span class="who">Dad</span></span></div>
+      <div class="ev"><span class="t">4:00</span><span>Piano lesson<span class="who">Sylvie</span></span></div>
+      <div class="ev"><span class="t">5:30</span><span>Grandma's for dinner</span></div>
+      <div class="ev"><span class="t">Night</span><span>Recycling out</span></div>
+    </div>
+
+    <div class="sticky">
+      <h2>Sylvie's jobs</h2>
+      <div class="chk done"><span class="box on"></span>Feed Juniper</div>
+      <div class="chk"><span class="box"></span>Piano, 15 minutes</div>
+      <div class="chk"><span class="box"></span>Pack library books</div>
+      <div class="chk"><span class="box"></span>Water the fern</div>
+    </div>
+
+    <div class="polaroid">
+      <div class="cov cov-rings"></div>
+      <div class="cap">Playing: Blue<small>Joni Mitchell</small></div>
+    </div>
+
+    <div class="flyer">
+      <h2>School lunch this week</h2>
+      <div class="row"><b>Mon</b><span>Cheese pizza</span><span class="box"></span></div>
+      <div class="row"><b>Tue</b><span>Chicken nuggets</span><span class="box on"></span></div>
+      <div class="row"><b>Wed</b><span>Taco bar</span><span class="box"></span></div>
+      <div class="row"><b>Thu</b><span>Mac &amp; cheese</span><span class="box on"></span></div>
+      <div class="row"><b>Fri</b><span>Bean burrito</span><span class="box"></span></div>
+      <div class="hint">Tap the days you want to buy</div>
+    </div>
+
+    <div class="dock">
+      <div class="big on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3v3M12 18v3"/></svg>Music<small>now playing</small></div>
+      <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Watch<small>living room</small></div>
+      <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5a1 1 0 0 1 1-1h6l1 2h7a1 1 0 0 1 1 1v12H5a1 1 0 0 1-1-1z"/><path d="M4 19a2 2 0 0 0 2 2h14"/></svg>Stories<small>Yoto</small></div>
+      <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20l7-7-4-4-7 7v4h4z"/><path d="M14 8l2-2 4 4-2 2"/></svg>Draw<small>leave a note</small></div>
+    </div>
+  </div></div></div>
+  <p class="caption">Type: Fredoka for everything you tap, Caveat for the handwritten notes. The "Draw" button uses the DC-1's stylus.</p>
+  <div class="notes">
+    <div><h3>What it does well</h3><p>The most child-proof of the five. Four buttons, always in the same place, each with a picture. Cards can be added or taken down (a birthday card, a countdown, a drawing) without the layout caring. It is warm without needing color.</p></div>
+    <div><h3>Watch out</h3><p>This is the direction most likely to get busy. It needs a hard rule: at most five things on the door at once. Rotated cards and hand lettering can tip into kitsch if the execution gets cute; the fix is to keep the lines crisp and the shadows hard.</p></div>
+    <div><h3>How a kid uses it</h3><p>Tap "Watch", get a page of posters grouped by shelf (Shows, Movies, Videos, Podcasts). Tap a poster, a big "Play on the TV" button appears. Done. The "Draw" button opens a blank card that stays on the door until someone clears it.</p></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ 3. FIELD GUIDE ═══════════════════════ -->
+<section class="dir" id="fieldguide">
+  <div class="dir-head"><span class="n">Direction 3</span><h2>Field Guide</h2></div>
+  <p class="thesis">A dot-grid notebook with the day plotted on a ruler. Modules with hard borders, monospace labels, square checkboxes. It is the direct descendant of Crate's paper theme, so the two apps would feel like one family of tools.</p>
+  <div class="frame"><div class="viewport"><div class="screen fg">
+    <div class="top">
+      <div class="d">MON 12 OCT <span>07:42</span></div>
+      <div class="w"><span>48°F · CLOUDY · HI 61</span><span>SUNSET 18:48</span></div>
+    </div>
+    <div class="mid">
+      <div class="mod">
+        <h2>Today <span>5 events</span></h2>
+        <div class="tl">
+          <div class="hr" style="top:0"><span>07</span></div>
+          <div class="hr" style="top:29px"><span>08</span></div>
+          <div class="hr" style="top:58px"><span>09</span></div>
+          <div class="hr" style="top:87px"><span>10</span></div>
+          <div class="hr" style="top:116px"><span>11</span></div>
+          <div class="hr" style="top:145px"><span>12</span></div>
+          <div class="hr" style="top:174px"><span>13</span></div>
+          <div class="hr" style="top:203px"><span>14</span></div>
+          <div class="hr" style="top:232px"><span>15</span></div>
+          <div class="hr" style="top:261px"><span>16</span></div>
+          <div class="hr" style="top:290px"><span>17</span></div>
+          <div class="hr" style="top:319px"><span>18</span></div>
+          <div class="hr" style="top:348px"><span>19</span></div>
+          <div class="blk hatch" style="top:58px;height:174px"><b>School</b>Sylvie · 9:00–3:00</div>
+          <div class="blk fill" style="top:159px;height:32px;left:60px"><b>Dentist</b>Dad</div>
+          <div class="blk" style="top:261px;height:32px"><b>Piano lesson</b>Sylvie</div>
+          <div class="blk fill" style="top:305px;height:43px"><b>Dinner at Grandma's</b>Everyone · bring pie dish</div>
+        </div>
+      </div>
+      <div class="mod">
+        <h2>Tasks <span>1 of 5 done</span></h2>
+        <div class="task done"><span class="box on"></span><span>Feed Juniper</span><span class="who">Sylvie</span></div>
+        <div class="task"><span class="box"></span><span>Practice piano, 15 min</span><span class="who">Sylvie</span></div>
+        <div class="task"><span class="box"></span><span>Pack library books (due Wed)</span><span class="who">Sylvie</span></div>
+        <div class="task"><span class="box"></span><span>Water the fern</span><span class="who">Anyone</span></div>
+        <div class="task"><span class="box"></span><span>Sign field-trip form</span><span class="who">Dad</span></div>
+        <div class="task"><span class="box"></span><span>Recycling to the curb</span><span class="who">Tonight</span></div>
+        <span class="stamp">Recycling week</span>
+      </div>
+      <div>
+        <div class="mod" style="margin-bottom:16px">
+          <h2>Kitchen <span>Kitchen speaker</span></h2>
+          <div class="np"><div class="cov cov-rings"></div><div><div class="t">Blue</div><div class="a">Joni Mitchell</div><div class="a" style="font-size:11px;margin-top:4px">California</div></div></div>
+          <div class="bar"></div>
+          <div class="times"><span>2:14</span><span>3:48</span></div>
+          <div class="tr">
+            <div><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6L9 12l11 6z"/></svg></div>
+            <div><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></div>
+            <div><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l11 6-11 6z"/></svg></div>
+          </div>
+          <div class="btn">Pick an album</div>
+        </div>
+        <div class="mod">
+          <h2>Living room TV <span>Idle</span></h2>
+          <div class="opt"><span>Bluey</span><small>DISNEY+</small></div>
+          <div class="opt"><span>Kiki's Delivery Service</span><small>MAX</small></div>
+          <div class="opt"><span>Backyard squirrel maze</span><small>YOUTUBE</small></div>
+          <div class="btn ghost" style="margin-top:6px">All shows</div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom">
+      <div class="lab"><h2>School lunch</h2><p>Sylvie: tap the days you want to buy.</p></div>
+      <div class="d"><div><b>MON</b><br>Cheese pizza</div><span class="box"></span></div>
+      <div class="d"><div><b>TUE</b><br>Chicken nuggets</div><span class="box on"></span></div>
+      <div class="d"><div><b>WED</b><br>Taco bar</div><span class="box"></span></div>
+      <div class="d"><div><b>THU</b><br>Mac &amp; cheese</div><span class="box on"></span></div>
+      <div class="d"><div><b>FRI</b><br>Bean burrito</div><span class="box"></span></div>
+    </div>
+  </div></div></div>
+  <p class="caption">Type: IBM Plex Mono for labels and times, IBM Plex Sans Condensed for text. Same family Crate already uses.</p>
+  <div class="notes">
+    <div><h3>What it does well</h3><p>The day-as-a-ruler is the most informative view of time here. A kid can see "school is the long stripe, piano is after". Modules are honest boxes, so adding or removing one is cheap, and it matches Crate's paper theme without any work.</p></div>
+    <div><h3>Watch out</h3><p>It is the least "pretty" of the five and the most "app". Monospace all-caps labels are a tool aesthetic; the kitchen may want something softer. Tap targets are fine but not generous.</p></div>
+    <div><h3>How a kid uses it</h3><p>Everything is in a box, and boxes with a black button do something. Checkboxes are big squares. Pickers open as a full-screen grid of covers with the same dot-grid behind them.</p></div>
+  </div>
+</section>
+<!-- ═══════════════════════ 4. WOODCUT ═══════════════════════ -->
+<section class="dir" id="woodcut">
+  <div class="dir-head"><span class="n">Direction 4</span><h2>Woodcut</h2></div>
+  <p class="thesis">A linocut picture book. Heavy black bands, thick frames, solid silhouettes and halftone shading. Nothing on it depends on a gray, which is exactly what a reflective screen renders best. It is the boldest of the five and the one that would look like art on the wall.</p>
+  <div class="frame"><div class="viewport"><div class="screen wc">
+    <div class="band">
+      <div><h1>MONDAY</h1><div class="sub">October 12 · 7:42 in the morning</div></div>
+      <div class="wx">
+        <div><b>48°</b><span>cloudy, clearing<br>jacket weather</span></div>
+        <svg viewBox="0 0 64 64" fill="#e8e7e2"><circle cx="40" cy="22" r="11"/><path d="M12 48a9 9 0 0 1 2-17.8A13 13 0 0 1 39 27a8 8 0 0 1 9 8 6.5 6.5 0 0 1-1 13z"/></svg>
+      </div>
+    </div>
+    <div class="tiles">
+      <div class="tile today">
+        <h2>Today</h2>
+        <div class="ev"><b>9:00</b><span>School <i>Sylvie, until 3:00</i></span></div>
+        <div class="ev"><b>12:30</b><span>Dentist <i>Dad</i></span></div>
+        <div class="ev"><b>4:00</b><span>Piano lesson <i>Sylvie</i></span></div>
+        <div class="ev"><b>5:30</b><span>Dinner at Grandma's <i>everyone · bring the pie dish</i></span></div>
+        <div class="ev"><b>Night</b><span>Recycling out</span></div>
+      </div>
+      <div class="tile">
+        <h2>Sylvie's jobs</h2>
+        <div class="chk"><span class="box on"></span>Feed Juniper</div>
+        <div class="chk"><span class="box"></span>Piano, 15 minutes</div>
+        <div class="chk"><span class="box"></span>Pack library books</div>
+        <svg class="art" viewBox="0 0 100 100" fill="#141413"><path d="M22 92c-6-22-2-44 10-56l-4-20 16 12c4-1 8-1 12 0l16-12-4 20c12 12 16 34 10 56z"/><circle cx="40" cy="48" r="4" fill="#e8e7e2"/><circle cx="60" cy="48" r="4" fill="#e8e7e2"/><path d="M44 62h12l-6 6z" fill="#e8e7e2"/></svg>
+      </div>
+      <div class="tile">
+        <h2>Kitchen music</h2>
+        <div class="np"><b>Blue</b>Joni Mitchell<br><span style="font-size:12px">▶ California</span></div>
+        <div class="cta">Pick an album</div>
+        <svg class="art" viewBox="0 0 100 100"><circle cx="54" cy="54" r="44" fill="#141413"/><circle cx="54" cy="54" r="30" fill="none" stroke="#e8e7e2" stroke-width="2" stroke-dasharray="3 4"/><circle cx="54" cy="54" r="14" fill="#e8e7e2"/><circle cx="54" cy="54" r="3" fill="#141413"/></svg>
+      </div>
+      <div class="tile">
+        <h2>Watch</h2>
+        <div class="np">Living room TV is off.<br><span style="font-size:12px">Bluey · Kiki · Squirrel maze · Wow in the World</span></div>
+        <div class="cta ghost">Pick a show</div>
+        <svg class="art" viewBox="0 0 100 100" fill="#141413"><path d="M30 8l20 18L70 8l3 3-19 17h30a6 6 0 0 1 6 6v44a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6V34a6 6 0 0 1 6-6h30L27 11z"/><rect x="18" y="36" width="52" height="40" fill="#e8e7e2"/><rect x="18" y="36" width="52" height="40" class="halftone" fill="url(#ht)"/><circle cx="82" cy="46" r="4" fill="#e8e7e2"/><circle cx="82" cy="60" r="4" fill="#e8e7e2"/><defs><pattern id="ht" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1.1" fill="#141413"/></pattern></defs></svg>
+      </div>
+      <div class="tile">
+        <h2>Stories</h2>
+        <div class="np">Yoto is quiet.<br><span style="font-size:12px">Last played: The Gruffalo</span></div>
+        <div class="cta ghost">Pick a story</div>
+        <svg class="art" viewBox="0 0 100 100" fill="#141413"><path d="M12 18h30a8 8 0 0 1 8 8v58a6 6 0 0 0-6-6H12z"/><path d="M88 18H58a8 8 0 0 0-8 8v58a6 6 0 0 1 6-6h32z"/><rect x="18" y="28" width="18" height="3" fill="#e8e7e2"/><rect x="18" y="36" width="18" height="3" fill="#e8e7e2"/><rect x="18" y="44" width="12" height="3" fill="#e8e7e2"/><rect x="64" y="28" width="18" height="3" fill="#e8e7e2"/><rect x="64" y="36" width="18" height="3" fill="#e8e7e2"/><rect x="64" y="44" width="12" height="3" fill="#e8e7e2"/></svg>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="t">School lunch<br><span style="font-size:12px;font-family:'Young Serif',serif">this week</span></div>
+      <div class="week">
+        <div class="day"><b>MON</b>Cheese pizza</div>
+        <div class="day on"><b>TUE</b>Chicken nuggets</div>
+        <div class="day"><b>WED</b>Taco bar</div>
+        <div class="day on"><b>THU</b>Mac &amp; cheese</div>
+        <div class="day"><b>FRI</b>Bean burrito</div>
+      </div>
+      <div class="go">Change days</div>
+    </div>
+  </div></div></div>
+  <p class="caption">Type: Alfa Slab One for display, Young Serif for text. The illustrations are solid black shapes with white cut-outs, the way a lino print works.</p>
+  <div class="notes">
+    <div><h3>What it does well</h3><p>Reads from across the room. The black bands give the screen a top and a bottom, so the day-specific slot (lunch menu today, "Happy birthday" another day, "Snow day!" another) has a permanent home in the footer. Big tiles, big buttons, a picture per tile: a child understands it at once.</p></div>
+    <div><h3>Watch out</h3><p>Heavy. The style depends on good illustration, so each new feature needs a drawing, not just a label. Five tiles is the limit; a sixth feature has to replace one or live behind a button. Slab serif at small sizes gets dense, so body text stays in the lighter serif.</p></div>
+    <div><h3>How a kid uses it</h3><p>Tap the tile. "Pick an album" opens a full page of covers, each in a thick frame, four across. Tap one and it starts; the tile updates with the cover. The TV picker is the same page with posters grouped under black shelf labels.</p></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ 5. TIMETABLE ═══════════════════════ -->
+<section class="dir" id="timetable">
+  <div class="dir-head"><span class="n">Direction 5</span><h2>Timetable</h2></div>
+  <p class="thesis">A station departures board. One typeface, two weights, a strict grid and a lot of air. The day is a horizontal timeline with a lane per person and a marker for now. It is the calmest direction and the one that will still look right in five years.</p>
+  <div class="frame"><div class="viewport"><div class="screen tt">
+    <div class="hdr">
+      <div class="time">7:42</div>
+      <div class="date">Monday<small>12 October 2026</small></div>
+      <div class="wx"><b>48°</b>cloudy, clearing by noon<br>jacket weather</div>
+    </div>
+    <div class="board">
+      <div class="axis">
+        <span style="left:0%">7</span><span style="left:8.3%">8</span><span style="left:16.6%">9</span><span style="left:25%">10</span><span style="left:33.3%">11</span><span style="left:41.6%">12</span><span style="left:50%">1</span><span style="left:58.3%">2</span><span style="left:66.6%">3</span><span style="left:75%">4</span><span style="left:83.3%">5</span><span style="left:91.6%">6</span><span style="left:100%">7</span>
+      </div>
+      <div class="lane"><span class="now" style="left:5.8%"></span><span class="bar" style="left:16.6%;width:50%">School</span><span class="bar" style="left:75%;width:8.3%">Piano</span><span class="bar light" style="left:87.5%;width:12.5%">Grandma's</span></div>
+      <div class="lane"><span class="bar light" style="left:45.8%;width:8.3%">Dentist</span><span class="bar light" style="left:87.5%;width:12.5%">Grandma's</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px;color:#333"><span>Top lane Sylvie, bottom lane Dad. Mom's day is clear.</span><span>Recycling goes out tonight</span></div>
+    </div>
+    <div class="grid">
+      <div>
+        <h2>Jobs today <span>1 of 5</span></h2>
+        <div class="row done"><span class="box on"></span><span>Feed Juniper</span><span class="who">Sylvie</span></div>
+        <div class="row"><span class="box"></span><span>Practice piano, 15 min</span><span class="who">Sylvie</span></div>
+        <div class="row"><span class="box"></span><span>Pack library books</span><span class="who">Sylvie</span></div>
+        <div class="row"><span class="box"></span><span>Water the fern</span><span class="who">Anyone</span></div>
+        <div class="row"><span class="box"></span><span>Sign field-trip form</span><span class="who">Dad</span></div>
+      </div>
+      <div>
+        <h2>Kitchen <span>playing</span></h2>
+        <div class="np"><div class="cov cov-rings"></div><div><b>Blue</b><span>Joni Mitchell</span><small>California · 2:14 of 3:48</small></div></div>
+        <div class="act"><div>Pause</div><div>Next</div><div class="fill wide">Pick an album</div></div>
+      </div>
+      <div>
+        <h2>Living room <span>TV off</span></h2>
+        <div class="opt"><span>Bluey</span><small>Disney+</small></div>
+        <div class="opt"><span>Kiki's Delivery Service</span><small>Max</small></div>
+        <div class="opt"><span>Backyard squirrel maze</span><small>YouTube</small></div>
+        <div class="act"><div class="fill wide">All shows and movies</div></div>
+      </div>
+      <div class="lunch">
+        <div class="lab"><b>School lunch this week</b><span>Sylvie, tap the days you want to buy.</span></div>
+        <div class="d"><b>Mon</b>Cheese pizza<span class="box"></span></div>
+        <div class="d"><b>Tue</b>Chicken nuggets<span class="box on"></span></div>
+        <div class="d"><b>Wed</b>Taco bar<span class="box"></span></div>
+        <div class="d"><b>Thu</b>Mac &amp; cheese<span class="box on"></span></div>
+        <div class="d"><b>Fri</b>Bean burrito<span class="box"></span></div>
+      </div>
+    </div>
+  </div></div></div>
+  <p class="caption">Type: Schibsted Grotesk only, regular and extra-bold. Everything aligns to one grid; nothing is rotated or decorated.</p>
+  <div class="notes">
+    <div><h3>What it does well</h3><p>Nothing competes. The clock and the timeline do the job a wall clock and a calendar do, and the rest sits quietly below. Lanes per person make "who has what today" obvious. It is the easiest to extend without making it busy, because new things get a column, not a card.</p></div>
+    <div><h3>Watch out</h3><p>Grown-up. A child can use it (round checkboxes, black buttons) but nothing about it invites them. It can read as a corporate dashboard if the type scale is not generous and the grid not loose enough.</p></div>
+    <div><h3>How a kid uses it</h3><p>Same three actions: tap a circle, tap "Pick an album", tap "All shows". Pickers are a grid of covers with a shelf label above each row, in the same single typeface.</p></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ VERDICT ═══════════════════════ -->
+<section class="dir" id="verdict">
+  <h2>My pick</h2>
+  <div class="verdict">
+    <p><b>Woodcut for the home screen, Field Guide's timeline inside it.</b> Woodcut is the only direction that gets better on this screen rather than merely surviving it: solid black, hard edges, no gray ramps, pictures instead of labels. It is also the one a child can run alone. Its weakness (five tiles, no more) is a feature for a family dashboard that you are worried about getting busy.</p>
+    <p>What I would borrow from the others: the Field Guide's hour ruler for the Today tile, because a long stripe for "school" teaches time better than a list; and the Fridge Door's "Draw a note" button, because the stylus is the DC-1's best feature and a kid-drawn note on the kitchen screen is the thing everyone will remember.</p>
+    <p>If Woodcut feels too loud for the kitchen, Timetable is the safe second choice and the easiest to extend. Fridge Door is the one to pick if the kids' delight matters more than the parents' calm.</p>
+    <p style="margin-bottom:0">Every direction shares one interaction model, so the choice is purely visual: the home screen shows state and has three or four big actions; each action opens one full-screen picker of covers or posters; tapping a cover plays it and returns home. Nothing on the device ever asks for typing. All editing (adding albums, movies, chores, calendar events) happens on your phone.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════ BUILD ═══════════════════════ -->
+<section class="dir" id="build">
+  <h2>How it gets built</h2>
+  <p class="lede">A native Android app on the DC-1 (it runs Android 13), plus a small backend in the same shape as Crate: Vercel functions and Supabase. The full proposal is in the repo as <code>docs/PROPOSAL.md</code>; this is the short version.</p>
+  <table class="arch">
+    <tr><th>Tablet app</th><td>Kotlin + Jetpack Compose, pinned as a kiosk (lock task mode, screen always on, night clock after bedtime). Talks to the backend over HTTPS and to the TV over the home network directly. One build, five themes are just five Compose theme objects, so switching directions later is cheap.</td></tr>
+    <tr><th>Backend</th><td><code>brimley-home</code> on Vercel + Supabase, same stack as Crate. Serves one <code>GET /api/today</code> that assembles everything the home screen shows: calendar events, tasks, cards for the day, the TV catalog, and the music state proxied from Crate. Phone-friendly admin pages for editing.</td></tr>
+    <tr><th>Music</th><td>Crate stays the source of truth. The dashboard calls Crate's existing play, state and control routes with a signed-in session for your account. Small Crate change: a "household" token that can only read crates and start playback, so the kitchen never has edit access.</td></tr>
+    <tr><th>Calendar</th><td>Google Calendar API against the shared family calendar (service account or one OAuth grant). Cached on the backend and refreshed every few minutes.</td></tr>
+    <tr><th>Tasks and chores</th><td>New table. One-off tasks, recurring chores (Mon/Wed/Fri), assignee, done-at. The tablet toggles them; the admin page creates them. Allowance bounties are the same table with an amount.</td></tr>
+    <tr><th>Day cards</th><td>A generic "card" with a show-from and show-until. Your Zo automation posts the lunch menu as a card every Monday morning with a small bearer token (<code>POST /api/cards</code>). Birthdays, snow days and "Grandma arrives today" are cards too, from the admin page.</td></tr>
+    <tr><th>TV</th><td>Depends on which Chromecast. A Chromecast with Google TV speaks the Android TV remote protocol on the home network: the app can launch a deep link (a Disney+ title, a Max episode, a YouTube video, a Pocket Casts episode) and send play, pause, volume and back. The catalog is a table of titles with a service and a deep link. An older "dongle" Chromecast can only run Cast receivers, which covers YouTube and podcasts (streamed by RSS) but not Disney+ or Max per title.</td></tr>
+    <tr><th>Staying current</th><td>A subscriptions list (Disney+, Max, Netflix…) you toggle. Titles on a paused service disappear from the picker. A weekly job checks each title's streaming availability through TMDB's watch-provider data and flags anything that moved.</td></tr>
+    <tr><th>Yoto</th><td>Yoto has an official developer API with MQTT control of the player, so "Stories" can start a card on the Yoto itself. If you meant Yoto content on the TV, say so, because that is a different path.</td></tr>
+  </table>
+  <h3>Things I need from you before the build</h3>
+  <ul class="plain-list">
+    <li>Which Chromecast exactly (the Google TV one with a remote, or the older dongle). It decides the whole TV section.</li>
+    <li>Whether your DC-1 has the Play Store and Google services. I believe it ships with them, which makes Cast and calendar sign-in easier, but confirm in Settings.</li>
+    <li>Whether Zo can call a URL on a schedule (a POST with a token). Its site builder suggests yes.</li>
+    <li>Whether the family calendar is one shared Google calendar or several.</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════ IDEAS ═══════════════════════ -->
+<section class="dir" id="ideas">
+  <h2>Other ideas</h2>
+  <p class="lede">On the two you were unsure about: yes to both, but each gets exactly one slot and stays off the home screen unless it has something to say.</p>
+  <div class="ideas">
+    <div class="idea"><span class="tag">Your idea · recommended, with limits</span><h3>Bounty board</h3><p>Not a permanent button. When you post a bounty ("Vacuum the basement, $1"), it appears as a day card. The kid taps "I did it", you approve from your phone, and a small ledger per child keeps the running total. No bounty, no card, nothing on screen.</p></div>
+    <div class="idea"><span class="tag">Your idea · recommended</span><h3>Our makes</h3><p>A shelf of family projects behind one button, like a crate for things you built. Sylvie's game can run right on the tablet in a full-screen web view if it works in grayscale, which is a fun constraint to design for. Each project gets a cover, a date, and who made it.</p></div>
+    <div class="idea"><span class="tag">New · the DC-1's best trick</span><h3>Draw a note</h3><p>The stylus. A blank card anyone can draw on, which stays on the screen until cleared. "Back at 6", a doodle for Mom, a tally of who won at cards. It is the fridge-magnet drawing, except it can also be sent to your phone.</p></div>
+    <div class="idea"><span class="tag">New</span><h3>Night clock</h3><p>After bedtime the screen becomes a large clock and tomorrow's first event, with the amber backlight. In the morning it becomes the dashboard again. The kitchen gets a beautiful clock for free.</p></div>
+    <div class="idea"><span class="tag">New</span><h3>Big visual timer</h3><p>A tap on "15 minutes of piano" starts a timer the size of the tile that empties like a sandglass. Kids understand a shrinking shape; they do not understand 14:37.</p></div>
+    <div class="idea"><span class="tag">New</span><h3>Countdowns</h3><p>"9 sleeps until Grandma arrives", drawn as a row of little moons. Added from the admin page with a date, shown as a card when within two weeks.</p></div>
+    <div class="idea"><span class="tag">New</span><h3>Dinner tonight</h3><p>One line in the header if you keep any kind of meal plan. It answers the question kids ask most, and it can come from a card Zo posts.</p></div>
+    <div class="idea"><span class="tag">New · maybe later</span><h3>Picture of the day</h3><p>One family photo a day, dithered to black and white like a newspaper halftone. Surprisingly lovely on this screen, and a reason to walk past it. Needs a photo source you trust (a shared album).</p></div>
+    <div class="idea"><span class="tag">New · maybe later</span><h3>Screen-time budget</h3><p>If you want it, the TV picker can show "one show left today" as a row of outlined and filled squares. Same catalog, one extra rule. Skip it if the catalog itself already does the limiting.</p></div>
+  </div>
+  <p>Things I would leave out: weather beyond one line, news, email, anything with a feed. The screen should be done changing by the time you finish reading it.</p>
+</section>
+</div>
+
+<script>
+(function () {
+  function fit() {
+    document.querySelectorAll('.frame').forEach(function (f) {
+      var vp = f.querySelector('.viewport');
+      var s = vp.clientWidth / 800;
+      f.querySelector('.screen').style.transform = 'scale(' + s + ')';
+    });
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  if (window.ResizeObserver) { new ResizeObserver(fit).observe(document.body); }
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fit); }
+})();
+</script>
+
+</body>
+</html>
