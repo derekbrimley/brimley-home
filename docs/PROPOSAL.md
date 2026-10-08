@@ -278,8 +278,8 @@ RLS on, service role from the API, as in Crate.
   calendar, weather, catalog resolution. Typechecks; 30 unit tests pass.
 - Tablet: app shell, Woodcut/Fredoka theme, home screen (four cards, band, footer),
   all-done stamp and star burst, Watch picker with confirmation, stylus note screen,
-  night clock, boot receiver, kiosk flags. Not yet compiled (no Android SDK on the
-  build host); first build will need a pass of compiler fixes.
+  night clock, boot receiver, kiosk flags. Builds a debug APK; not yet run on the
+  DC-1.
 - Not started: Crate household token and the Music tab (milestone 3), sending a
   title to the TV over the Android TV remote protocol (milestone 5), Yoto and
   Our makes (milestone 6).

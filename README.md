@@ -71,9 +71,8 @@ set it as device owner over adb before adding any Google account to the tablet:
 adb shell dpm set-device-owner home.brimley/.DeviceAdmin
 ```
 
-Build status: the backend typechecks and its tests pass. The Android project has
-not been compiled yet (the build host could not reach dl.google.com for the Android
-SDK), so expect a round of compiler fixes on first build.
+Build status: the backend typechecks and its tests pass; `./gradlew assembleDebug`
+builds a debug APK. It has not yet been run on a DC-1.
 
 ## Where things stand
 

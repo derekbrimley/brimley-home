@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -19,7 +21,7 @@ android {
         // Set these in android/local.properties (not committed):
         //   home.apiBase=https://home.yourdomain.com
         //   home.apiToken=<the "tablet" secret from HOME_API_TOKENS>
-        val props = java.util.Properties().apply {
+        val props = Properties().apply {
             val f = rootProject.file("local.properties")
             if (f.exists()) f.inputStream().use { load(it) }
         }
