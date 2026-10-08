@@ -7,10 +7,17 @@ built yet; it exists so the build has a shape to argue with.
 
 ## Decisions so far
 
-- **Visual direction: Woodcut.** Six equal tiles (Today, Jobs, Note, Kitchen music,
-  Watch, Stories), a black band on top, a day-card footer. Today is a short list, not a
-  timeline. The lunch menu is read-only.
-- **Hardware:** the Chromecast is an older dongle (no Google TV). The DC-1 has the Play
+- **Visual direction: Woodcut shapes, Fredoka type** (`docs/round-3.html`). Four cards
+  of different sizes: Today (largest, top left), Playing (top right, one card for
+  music, TV and stories), Jobs (bottom left, with the bounty row when one is posted),
+  Note (bottom right, with "Draw a note" and "Our makes"). Black band on top, read-only
+  day-card footer. Rounded corners, thick rules, solid-silhouette illustrations.
+- **One picker.** "Play something" has three tabs: Music (Crate shelves), Watch (Shows,
+  Movies, Videos, Listen), Stories (Yoto cards). The tab decides where it plays.
+- **Bounty board and Our makes are in.** Bounties appear only while posted; makes live
+  behind a button.
+- **Hardware:** the family owns both a dongle Chromecast and a Chromecast with Google
+  TV; recommendation is to put the Google TV one back (see TV). The DC-1 has the Play
   Store and Google services. One shared Google calendar. A Yoto player plus the Yoto app.
 - **Zo:** will POST the lunch menu from a background script with `curl`, not from an AI
   automation.
@@ -146,7 +153,19 @@ crates, the same picks, bigger covers.
 
 ### TV
 
-The Chromecast is an older dongle, so only Cast receiver apps run on it. The tablet
+**Recommendation: use the Chromecast with Google TV.** The reasons it was retired (the
+extra remote, the kids seeing the home screen) go away once the tablet is the remote:
+the physical remote stays in a drawer, and the dashboard deep-links straight into a
+title so the Google TV home screen is never the path. Google TV's "Apps only mode"
+hides recommendations if the home screen does appear; a kids profile limits what the
+apps offer. Known gap: when an episode ends, the service's app is on screen with its
+own rows. The Playing card has a "TV off" action, and a "stop after this" toggle at
+start time sends it automatically when the runtime is up.
+
+With the Google TV box the tablet uses the Android TV remote protocol (below, option
+A). The rest of this section is kept for the dongle case.
+
+The dongle Chromecast only runs Cast receiver apps. The tablet
 has Play services, so it uses the official **Google Cast SDK for Android** as a
 sender. That covers:
 
@@ -195,12 +214,22 @@ we own; tapping one asks where to play: **the Yoto player** (MQTT command) or **
 tablet's own speaker** (stream the card's chapters with ExoPlayer). The Yoto app does
 not appear to cast to a Chromecast, so the TV is not a target for stories.
 
-### Admin
+### Admin ("Add something")
 
-A phone-sized web app (React + Vite, same as Crate) at the same Vercel project, behind
-Supabase auth: add catalog items (paste a link, it fills in title and poster), add
-tasks and recurring chores, post a card, approve a bounty, toggle subscriptions,
-see what the lunch automation last posted. Nothing in it needs to be pretty.
+A phone-sized web app (React + Vite, same as Crate) at the same Vercel project, Google
+sign-in restricted to two allow-listed accounts. One box accepts:
+
+- a Share link from a streaming app (Disney+, Max, Netflix, Prime, YouTube): service
+  read from the domain, title and poster from TMDB or YouTube, item marked playable;
+- a typed title: TMDB search gives poster, shelf and current streaming providers; the
+  item is "not playable yet" until a link is pasted;
+- a podcast name or RSS URL: Apple's podcast search, episodes read live from the feed.
+
+The page also manages jobs and bounties (post, approve), text notes to the Note card,
+makes (title, picture, link), the paid-services list, and a "needs attention" list
+(titles that moved service, links that stopped resolving). A shared Google Sheet
+could replace the catalog part with zero UI, at the cost of previews and error
+reporting; the page is the recommendation.
 
 ### Zo integration
 
@@ -255,7 +284,6 @@ RLS on, service role from the API, as in Crate.
 
 ## Open questions
 
-- TV option A (swap the dongle for a Google TV device) or B (keep it, two taps)?
-- Is the stamp-and-burst the right all-done moment, or one of the alternatives in
-  `docs/woodcut-round-2.html`?
-- One Jobs tile with names, or one tile per child?
+- Confirm the Google TV box goes back on the TV.
+- Round 3 layout sign-off, then the build starts with the app shell.
+- One Jobs card with names, or one card per child?
