@@ -1,8 +1,21 @@
 # Brimley Home — proposal
 
 A family dashboard for the kitchen, running on a Daylight DC-1. This document is the
-plan behind `docs/design-directions.html`. Nothing here is built yet; it exists so the
-build has a shape to argue with.
+plan behind `docs/design-directions.html` (five directions) and
+`docs/woodcut-round-2.html` (the chosen direction, Woodcut, refined). Nothing here is
+built yet; it exists so the build has a shape to argue with.
+
+## Decisions so far
+
+- **Visual direction: Woodcut.** Six equal tiles (Today, Jobs, Note, Kitchen music,
+  Watch, Stories), a black band on top, a day-card footer. Today is a short list, not a
+  timeline. The lunch menu is read-only.
+- **Hardware:** the Chromecast is an older dongle (no Google TV). The DC-1 has the Play
+  Store and Google services. One shared Google calendar. A Yoto player plus the Yoto app.
+- **Zo:** will POST the lunch menu from a background script with `curl`, not from an AI
+  automation.
+- **All jobs done:** the Jobs tile inverts, a stamp lands, the week's star fills, a burst
+  of woodcut stars crosses the screen. Weekly stars feed a Saturday "golden week" banner.
 
 ## What it is for
 
@@ -60,14 +73,24 @@ or shadows that rely on gray ramps, a night mode that is just a clock.
 
 ### Tablet app
 
-- **Kotlin, Jetpack Compose, minSdk 33.** Sideloaded APK (or Play internal testing if
-  the DC-1 has Play). One activity, a `HomeScreen` and three full-screen pickers.
+- **Kotlin, Jetpack Compose, minSdk 33.** Distributed through Play's internal testing
+  track (the DC-1 has the Play Store), with a sideloaded APK as the fallback. One
+  activity, a `HomeScreen`, three full-screen pickers (album, show, story) and the
+  stylus note canvas.
 - **Kiosk:** `startLockTask()` with the app set as device owner via `adb dpm`, so the
   home and back buttons do nothing. `FLAG_KEEP_SCREEN_ON`. A `NightClock` composable
   replaces the dashboard between bedtime and morning.
-- **Themes are data.** Each design direction is a `HomeTheme` object (type scale,
-  stroke widths, corner radii, illustration set). Switching directions later is a
-  one-line change, so the visual choice does not block the build.
+- **Woodcut theme.** Alfa Slab One for display, Young Serif for text, Caveat for the
+  note tile, pure black on paper, 5–8 px rules, solid-silhouette illustrations as
+  vector drawables. Kept as one `HomeTheme` object so a later restyle is contained.
+- **Jobs and the all-done moment.** Checking the last job inverts the tile, lands an
+  "ALL DONE" stamp, fills the day's star and runs a two-second burst of star shapes
+  (Compose animation, ~20 shapes, no gray). Optional sound. The tile stays inverted
+  until midnight. Five stars in a week turns the band into a "golden week" banner on
+  Saturday.
+- **Note tile.** The stylus canvas saves a monochrome bitmap to the backend
+  (`cards` with kind `drawing`); the tile shows the latest. Parents can also post a
+  text note from the admin page.
 - **Refresh:** poll `GET /api/today` every 60 s and on wake; poll Crate's
   `GET /api/spotify/state` every 5 s while something is playing (same cadence as
   `usePlayer` in Crate). No push needed.
@@ -94,15 +117,13 @@ line in kid terms ("48°, jacket weather").
 
 ### Calendar
 
-Google Calendar API, read-only, against the shared family calendar. Two options:
-
-1. **Service account** with the family calendar shared to it. No tokens to refresh,
-   no user flow. Preferred.
-2. One OAuth grant from Derek's Google account, stored like Crate stores Spotify tokens.
+Google Calendar API, read-only, against the one shared family calendar, through a
+**service account** the calendar is shared with. No OAuth, no token refresh.
 
 Events are normalized to `{start, end, title, who, all_day}`. "Who" comes from a
-small mapping of calendar colors or title prefixes ("Sylvie: …") to family members,
-set in config.
+title prefix ("Sylvie: piano") or a per-person keyword list in config; events with
+no match are everyone's. The Today tile shows at most five lines; the rest collapse
+into "and N more", which opens the full day.
 
 ### Music (Crate)
 
@@ -123,27 +144,41 @@ for Derek's account; the UI simply never exposes editing.
 The dashboard's "Pick an album" page is a thin client of Crate's dashboard: the same
 crates, the same picks, bigger covers.
 
-### TV (the part that depends on hardware)
+### TV
 
-**If the Chromecast is a "Chromecast with Google TV"** (the one with a remote): it
-speaks the Android TV remote protocol v2 on the home network. The tablet app can
-implement it directly in Kotlin (pairing with a PIN once, then a TLS connection with
-protobuf messages; the Python `androidtvremote2` library is a complete reference):
+The Chromecast is an older dongle, so only Cast receiver apps run on it. The tablet
+has Play services, so it uses the official **Google Cast SDK for Android** as a
+sender. That covers:
 
-- launch a deep link: `https://www.youtube.com/watch?v=…`, `https://www.disneyplus.com/video/…`,
-  `https://play.max.com/video/watch/…`, a Pocket Casts episode link, or a package name
-- key presses: play/pause, back, home, volume, d-pad
+- **YouTube:** the YouTube Cast receiver, queued the way Home Assistant's YouTube
+  controller does it (receiver app id plus the lounge/queue call). Curated videos
+  only; the catalog holds video ids.
+- **Podcasts:** the episode's audio URL from the show's RSS feed, loaded into the
+  Cast default media receiver. No Pocket Casts account needed. The same episode can
+  play on the tablet's own speaker instead.
+- **Remote:** play, pause, seek, volume and stop for anything the tablet started.
 
-That gives a per-title remote for every service in the catalog. Deep-link formats
-are not officially documented and have broken briefly after Google updates; ADB over
-network is the fallback (`am start -a android.intent.action.VIEW -d <link>`).
+**Disney+, Max and Netflix cannot be started on a specific title** from anything but
+their own apps; their receivers only accept playback from an authenticated sender.
+Two ways around it, to be chosen:
 
-**If it is an older Chromecast dongle** (no Google TV): only Cast receivers work.
-YouTube has a receiver (launch by video id), and podcasts can be streamed straight
-from the show's RSS feed through the default media receiver without Pocket Casts at
-all. Disney+ and Max cannot be launched to a specific title. In that case, the
-curated catalog covers YouTube and podcasts, and "Disney+" / "Max" become one button
-each that opens the app's home.
+- **Option A, swap the dongle** for a Google TV Streamer (or Chromecast with Google
+  TV). Those speak the Android TV remote protocol v2 on the home network: pair once
+  with a PIN, then a TLS connection with protobuf messages (the Python
+  `androidtvremote2` library is a complete reference). The tablet can then launch a
+  deep link on any installed app (`https://www.disneyplus.com/video/…`,
+  `https://play.max.com/video/watch/…`, `https://www.youtube.com/watch?v=…`) and send
+  play/pause, volume, back and home. Deep-link formats are undocumented and have
+  broken briefly after Google updates; ADB over network is the fallback. This is the
+  only path where "tap Kiki, it plays" works end to end for the paid services.
+- **Option B, keep the dongle.** Install Disney+, Max and Netflix on the DC-1.
+  Tapping a Shows or Movies poster opens that app on the tablet at the title (their
+  Android apps accept the web links as intents), and the kid taps the app's own Cast
+  button once. Two taps, the service's app is briefly on screen, curation is softer.
+  YouTube and podcasts still go straight to the TV.
+
+The catalog schema is the same either way: `kind`, `service`, `deep_link` (or
+`youtube_id` / `rss_url` + episode guid), `tmdb_id`.
 
 **Keeping the catalog honest:** a weekly job looks up each movie or show's streaming
 availability through TMDB's watch-provider data (JustWatch-sourced, free API key),
@@ -153,10 +188,12 @@ items are checked by fetching the URL.
 
 ### Yoto
 
-Yoto has an official developer API (yoto.dev) with MQTT control of players: list
-cards, start a card on a player, pause, volume, and live status. "Stories" lists the
-cards we own and starts one on the kitchen or bedroom player. If the intent was Yoto
-content *on the TV*, that is a different path and needs discussion.
+Yoto has an official developer API (yoto.dev): OAuth client credentials, the
+library of purchased cards with chapters and audio stream URLs, and MQTT control of
+players (play a card, pause, resume, volume, live status). "Stories" lists the cards
+we own; tapping one asks where to play: **the Yoto player** (MQTT command) or **the
+tablet's own speaker** (stream the card's chapters with ExoPlayer). The Yoto app does
+not appear to cast to a Chromecast, so the TV is not a target for stories.
 
 ### Admin
 
@@ -167,9 +204,20 @@ see what the lunch automation last posted. Nothing in it needs to be pretty.
 
 ### Zo integration
 
-Zo's site builder can publish HTTP routes and run scheduled automations. The lunch
-automation gains one step: `POST https://home.brimley.../api/cards` with
-`Authorization: Bearer <token>` and a body like
+Zo recommended a background script rather than an AI automation for a fixed POST, so
+the lunch job becomes: the existing automation writes the week's menu to a JSON file,
+and a small looping script POSTs it Monday at 6:00 am (the shape of Zo's existing
+`finance-sync` job). The backend keeps the last payload; if a Monday POST fails, the
+card still shows last week's menu with a "may be out of date" line. The request:
+
+```sh
+curl -X POST https://home.brimley.../api/cards \
+  -H "Authorization: Bearer $BRIMLEY_HOME_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data @/path/to/lunch-menu.json
+```
+
+with a body like
 
 ```json
 { "kind": "lunch_menu", "title": "School lunch this week",
@@ -177,8 +225,8 @@ automation gains one step: `POST https://home.brimley.../api/cards` with
   "data": { "days": [ { "day": "Mon", "menu": "Cheese pizza" }, … ] } }
 ```
 
-Sylvie's choices (`PATCH /api/cards/:id` with `data.choices`) are stored on the card,
-and the Monday card can optionally be re-posted back to Zo or emailed.
+The card is read-only on the tablet; the footer shows the five days with today lifted
+out. Sylvie reads it and decides; nothing is recorded.
 
 ## Database (Supabase)
 
@@ -201,13 +249,13 @@ RLS on, service role from the API, as in Crate.
 2. Backend `/api/today` with calendar and tasks. Admin page for tasks.
 3. Music: Crate household token, "Pick an album" page, now-playing tile and remote.
 4. Cards, Zo lunch integration, Sylvie's lunch choices.
-5. TV: remote protocol spike against the actual Chromecast, then catalog + admin + availability job.
-6. Yoto, then the optional buttons (bounties, projects, draw a note).
+5. Watch: YouTube and podcasts to the dongle via the Cast SDK; Shows and Movies via
+   option A or B; catalog admin and the weekly availability job.
+6. Stories (Yoto) and the stylus note tile. Then, if wanted, bounties and projects.
 
 ## Open questions
 
-- Which Chromecast model?
-- Does the DC-1 have Google Play services? (Affects Cast SDK and calendar sign-in; not required.)
-- Is the family calendar one shared Google calendar, or several?
-- Can Zo POST to a URL on a schedule, or should the backend poll it?
-- Does "Yoto" mean the Yoto player, or Yoto content on the TV?
+- TV option A (swap the dongle for a Google TV device) or B (keep it, two taps)?
+- Is the stamp-and-burst the right all-done moment, or one of the alternatives in
+  `docs/woodcut-round-2.html`?
+- One Jobs tile with names, or one tile per child?

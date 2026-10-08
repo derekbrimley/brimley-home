@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brimley Home Woodcut</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Fredoka:wght@400;500;600;700&family=Caveat:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=Alfa+Slab+One&family=Young+Serif&family=Schibsted+Grotesk:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: a single long review page. Each direction is a 4:3 mockup of the DC-1 screen
+   (authored at 800x600, scaled to fit) followed by short notes. Chrome stays quiet so the
+   five mockups carry all the personality. */
+:root {
+  --bg: #f6f5f1;
+  --fg: #1b1b19;
+  --muted: #5e5d58;
+  --rule: #d9d7d0;
+  --card: #ffffff;
+  --bezel: #2a2a28;
+  --paper: #e8e7e2;   /* what "white" looks like on a reflective LCD */
+  --ink: #141413;
+  --font-chrome: "Schibsted Grotesk", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg:#15151a; --fg:#ecebe6; --muted:#a5a49c; --rule:#33333a; --card:#1d1d23; --bezel:#000; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg:#15151a; --fg:#ecebe6; --muted:#a5a49c; --rule:#33333a; --card:#1d1d23; --bezel:#000; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--font-chrome); margin: 0; padding-inline: 16px; padding-block: 32px 80px; line-height: 1.5; }
+.wrap { max-width: 980px; margin: 0 auto; }
+h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; margin: 0 0 12px; text-wrap: balance; }
+h2 { font-size: clamp(22px, 3.5vw, 30px); font-weight: 800; letter-spacing: -0.015em; margin: 0 0 4px; text-wrap: balance; }
+h3 { font-size: 16px; font-weight: 700; margin: 0 0 6px; }
+p { margin: 0 0 12px; max-width: 68ch; }
+.lede { font-size: 18px; color: var(--muted); max-width: 62ch; }
+.intro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px 28px; margin: 28px 0 8px; padding: 20px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.intro-grid div { min-width: 0; }
+.intro-grid b { display: block; font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 2px; }
+.intro-grid span { font-size: 15px; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 48px; padding: 0; list-style: none; }
+.toc a { display: inline-block; padding: 6px 12px; border: 1px solid var(--rule); border-radius: 999px; color: var(--fg); text-decoration: none; font-size: 14px; background: var(--card); }
+.toc a:hover, .toc a:focus-visible { border-color: var(--fg); outline: none; }
+section.dir { margin: 0 0 72px; scroll-margin-top: 16px; }
+.dir-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+.dir-head .n { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.thesis { color: var(--muted); font-size: 17px; margin-bottom: 18px; max-width: 70ch; }
+
+/* The device frame. The screen is authored at 800x600 and scaled by JS to the frame width. */
+.frame { position: relative; width: 100%; max-width: 820px; background: var(--bezel); border-radius: 14px; padding: 10px; box-sizing: border-box; box-shadow: 0 1px 0 rgba(0,0,0,.2), 0 18px 40px -20px rgba(0,0,0,.45); }
+.frame::after { content: ""; position: absolute; inset: 10px; border-radius: 4px; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.viewport { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 3px; background: var(--paper); }
+.screen { position: absolute; left: 0; top: 0; width: 800px; height: 600px; transform-origin: 0 0; background: var(--paper); color: var(--ink); overflow: hidden; filter: grayscale(1); box-sizing: border-box; }
+.screen * { box-sizing: border-box; }
+.screen svg { display: block; }
+.caption { font-size: 13px; color: var(--muted); margin: 10px 0 22px; }
+
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px 28px; }
+.notes div { min-width: 0; }
+.notes p { font-size: 15px; margin: 0; }
+.notes ul { margin: 0; padding-left: 18px; font-size: 15px; }
+.notes li { margin-bottom: 4px; }
+
+.verdict { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 22px 24px; margin: 8px 0 72px; }
+.verdict p { max-width: 72ch; }
+.plain-list { padding-left: 20px; }
+.plain-list li { margin-bottom: 8px; max-width: 70ch; }
+table.arch { border-collapse: collapse; width: 100%; font-size: 14.5px; margin: 10px 0 24px; }
+table.arch th, table.arch td { text-align: left; vertical-align: top; padding: 9px 10px 9px 0; border-bottom: 1px solid var(--rule); }
+table.arch th { font-weight: 700; white-space: nowrap; width: 150px; }
+.ideas { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin: 14px 0 24px; }
+.idea { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.idea h3 { margin-bottom: 4px; }
+.idea p { font-size: 14.5px; margin: 0; color: var(--fg); }
+.idea .tag { display: inline-block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.92em; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+/* ───────────── Shared cover-art stand-ins (no external images allowed) ───────────── */
+.cov { background-color: #fff; border: 1.5px solid var(--ink); }
+.cov-stripes { background-image: repeating-linear-gradient(135deg, #111 0 6px, #fff 6px 14px); }
+.cov-rings  { background-image: radial-gradient(circle at 50% 50%, #111 0 8%, #fff 8% 20%, #111 20% 28%, #fff 28% 40%, #111 40% 46%, #fff 46%); }
+.cov-dots   { background-image: radial-gradient(circle, #111 34%, transparent 36%); background-size: 12px 12px; }
+.cov-check  { background-image: linear-gradient(45deg, #111 25%, transparent 25%, transparent 75%, #111 75%), linear-gradient(45deg, #111 25%, #fff 25%, #fff 75%, #111 75%); background-size: 18px 18px; background-position: 0 0, 9px 9px; }
+.cov-wave   { background-image: repeating-radial-gradient(circle at 0 100%, #fff 0 10px, #111 10px 14px); }
+.cov-grad   { background-image: linear-gradient(180deg, #fff, #111); }
+
+/* ═══════════════ 4. WOODCUT ═══════════════ */
+.wc { font-family: "Young Serif", Georgia, serif; border: 8px solid var(--ink); display: grid; grid-template-rows: 108px minmax(0, 1fr) 80px; }
+.wc .disp { font-family: "Alfa Slab One", "Young Serif", serif; }
+.wc .band { background: var(--ink); color: var(--paper); display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 0 22px; gap: 20px; }
+.wc .band h1 { font-family: "Alfa Slab One", serif; font-size: 56px; margin: 0; line-height: 1; letter-spacing: .01em; }
+.wc .band .sub { font-size: 16px; margin-top: 4px; }
+.wc .band .wx { display: flex; align-items: center; gap: 14px; text-align: right; }
+.wc .band .wx svg { width: 68px; height: 68px; }
+.wc .band .wx b { font-family: "Alfa Slab One", serif; font-size: 34px; display: block; line-height: 1; }
+.wc .band .wx span { font-size: 14px; }
+.wc .tiles { display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; overflow: hidden; }
+.wc .tile { border-right: 5px solid var(--ink); border-bottom: 5px solid var(--ink); padding: 12px 16px; position: relative; overflow: hidden; }
+.wc .tile:nth-child(3n) { border-right: 0; }
+.wc .tile:nth-child(n+4) { border-bottom: 0; }
+.wc .tile h2 { font-family: "Alfa Slab One", serif; font-size: 20px; margin: 0 0 8px; }
+.wc .tile.today { grid-row: span 2; }
+.wc .ev { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: baseline; padding: 7px 0; border-bottom: 2px solid var(--ink); font-size: 15px; line-height: 1.2; }
+.wc .ev b { font-family: "Alfa Slab One", serif; font-size: 16px; font-variant-numeric: tabular-nums; }
+.wc .ev i { display: block; font-size: 12px; font-style: normal; }
+.wc .chk { display: flex; gap: 10px; align-items: center; font-size: 14px; padding: 6px 0; max-width: 150px; }
+.wc .chk .box { width: 24px; height: 24px; border: 3px solid var(--ink); flex: 0 0 auto; position: relative; }
+.wc .chk .box.on { background: var(--ink); }
+.wc .chk .box.on::after { content: ""; position: absolute; left: 6px; top: 0px; width: 6px; height: 12px; border: solid var(--paper); border-width: 0 3px 3px 0; transform: rotate(45deg); }
+.wc .art { position: absolute; right: 8px; bottom: 6px; width: 96px; height: 96px; }
+.wc .halftone { background-image: radial-gradient(circle, #111 1.6px, transparent 1.9px); background-size: 6px 6px; }
+.wc .cta { position: absolute; left: 16px; bottom: 14px; background: var(--ink); color: var(--paper); font-family: "Alfa Slab One", serif; font-size: 15px; padding: 10px 14px; border: 3px solid var(--ink); }
+.wc .cta.ghost { background: var(--paper); color: var(--ink); }
+.wc .np { font-size: 14px; line-height: 1.25; max-width: 140px; }
+.wc .np b { display: block; font-size: 16px; }
+.wc .foot { background: var(--ink); color: var(--paper); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 0 18px; }
+.wc .foot .t { font-family: "Alfa Slab One", serif; font-size: 17px; line-height: 1.1; }
+.wc .foot .week { display: flex; gap: 8px; }
+.wc .foot .day { border: 2px solid var(--paper); padding: 4px 8px; font-size: 11.5px; line-height: 1.15; min-width: 88px; }
+.wc .foot .day b { font-family: "Alfa Slab One", serif; display: block; font-size: 11px; letter-spacing: .06em; }
+.wc .foot .day.on { background: var(--paper); color: var(--ink); }
+.wc .foot .go { font-family: "Alfa Slab One", serif; font-size: 13px; border: 2px solid var(--paper); padding: 8px 10px; }
+
+</style>
+<style>
+/* Round 2 additions. Everything below reuses the Woodcut tokens: black ink, paper, slab display, Young Serif text. */
+.wc .tiles3 { display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: minmax(0,1fr) minmax(0,1fr); min-height: 0; overflow: hidden; }
+.wc .tiles3 .tile:nth-child(3n) { border-right: 0; }
+.wc .tiles3 .tile:nth-child(n+4) { border-bottom: 0; }
+.wc .ev2 { display: grid; grid-template-columns: 50px 1fr; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 2px solid var(--ink); font-size: 14px; line-height: 1.2; }
+.wc .ev2 b { font-family: "Alfa Slab One", serif; font-size: 15px; font-variant-numeric: tabular-nums; }
+.wc .ev2 .who { display: inline-block; font-size: 10.5px; border: 2px solid var(--ink); border-radius: 999px; padding: 0 6px; line-height: 15px; margin-left: 5px; vertical-align: 2px; font-family: "Alfa Slab One", serif; }
+.wc .ev2 .who.fill { background: var(--ink); color: var(--paper); }
+.wc .stars { display: flex; gap: 5px; margin-top: 8px; align-items: center; }
+.wc .stars svg { width: 18px; height: 18px; }
+.wc .stars small { font-size: 11px; margin-left: 4px; }
+.wc .tile h2 small { font-family: "Young Serif", serif; font-size: 12px; margin-left: 8px; }
+.wc .note { font-family: "Caveat", cursive; font-size: 30px; line-height: 1; font-weight: 700; transform: rotate(-3deg); margin: 10px 0 0 4px; max-width: 170px; }
+.wc .note small { display: block; font-size: 20px; font-weight: 500; margin-top: 4px; }
+.wc .foot2 { background: var(--ink); color: var(--paper); display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 18px; padding: 0 18px; }
+.wc .foot2 .week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.wc .foot2 .day { font-size: 12.5px; line-height: 1.2; border-left: 2px solid var(--paper); padding-left: 8px; }
+.wc .foot2 .day b { font-family: "Alfa Slab One", serif; display: block; font-size: 11px; letter-spacing: .06em; }
+.wc .foot2 .day.today { background: var(--paper); color: var(--ink); border-left: 0; padding: 4px 8px; margin: -4px 0; }
+/* all-done moment */
+.wc .tile.done { background: var(--ink); color: var(--paper); }
+.wc .tile.done h2 { color: var(--paper); }
+.wc .stamp { position: absolute; left: 14px; bottom: 44px; border: 4px solid var(--paper); padding: 6px 10px; font-family: "Alfa Slab One", serif; font-size: 26px; line-height: 1; transform: rotate(-8deg); letter-spacing: .02em; }
+.wc .burst { position: absolute; pointer-events: none; }
+.wc .burst svg { width: 100%; height: 100%; }
+/* pickers */
+.wc .pband { background: var(--ink); color: var(--paper); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 0 22px; }
+.wc .pband h1 { font-family: "Alfa Slab One", serif; font-size: 34px; margin: 0; line-height: 1; }
+.wc .pband .sub { font-size: 13px; }
+.wc .pband .back { font-family: "Alfa Slab One", serif; font-size: 14px; border: 3px solid var(--paper); padding: 8px 12px; }
+.wc .shelves { padding: 8px 22px 6px; display: grid; grid-auto-rows: minmax(0,1fr); min-height: 0; overflow: hidden; }
+.wc .shelves2 { padding: 8px 22px 8px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0,1fr) minmax(0,1fr); gap: 0 24px; min-height: 0; overflow: hidden; }
+.wc .shelves2 .shelf:nth-child(3), .wc .shelves2 .shelf:nth-child(4) { border-bottom: 0; }
+.wc .shelf { border-bottom: 5px solid var(--ink); padding: 4px 0 8px; min-height: 0; overflow: hidden; }
+.wc .shelf:last-child { border-bottom: 0; }
+.wc .shelf h2 { font-family: "Alfa Slab One", serif; font-size: 15px; margin: 0 0 5px; display: flex; justify-content: space-between; align-items: baseline; }
+.wc .shelf h2 small { font-family: "Young Serif", serif; font-size: 11.5px; }
+.wc .covs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; }
+.wc .cv { font-size: 10.5px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wc .cv .cov { width: 100%; aspect-ratio: 1; border: 3px solid var(--ink); margin-bottom: 4px; }
+.wc .cv b { display: block; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.wc .posters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.wc .ps { font-size: 10px; line-height: 1.15; min-width: 0; }
+.wc .ps .cov { width: 100%; aspect-ratio: 2 / 3; border: 3px solid var(--ink); margin-bottom: 3px; }
+.wc .ps b { display: block; font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wc .ps .svc { display: inline-block; font-family: "Alfa Slab One", serif; font-size: 8.5px; letter-spacing: .05em; border: 1.5px solid var(--ink); padding: 0 4px; margin-top: 2px; }
+.wc .ps .svc.fill { background: var(--ink); color: var(--paper); }
+.wc .cv .cov.sel, .wc .ps .cov.sel { outline: 4px solid var(--ink); outline-offset: 3px; }
+.wc .confirm { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: var(--paper); border: 8px solid var(--ink); padding: 18px 22px; width: 360px; }
+.wc .confirm b { font-family: "Alfa Slab One", serif; font-size: 20px; display: block; margin-bottom: 4px; }
+.wc .confirm .row { display: flex; gap: 10px; margin-top: 14px; }
+.wc .confirm .row div { flex: 1; text-align: center; font-family: "Alfa Slab One", serif; font-size: 14px; padding: 10px; border: 3px solid var(--ink); }
+.wc .confirm .row div.fill { background: var(--ink); color: var(--paper); }
+.scrim { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, rgba(0,0,0,.12) 0 2px, transparent 2px 6px); }
+.two { display: grid; grid-template-columns: 1fr; gap: 28px; }
+.steps { padding-left: 20px; }
+.steps li { margin-bottom: 10px; max-width: 72ch; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<h1>Woodcut, round two</h1>
+<p class="lede">The home screen with your changes, the moment the jobs are all done, and the two picker screens behind "Pick an album" and "Pick a show". Below that, the build plan updated for a dongle Chromecast, a shared calendar, Zo and Yoto.</p>
+
+<ul class="toc">
+  <li><a href="#home">Home</a></li>
+  <li><a href="#done">All jobs done</a></li>
+  <li><a href="#albums">Pick an album</a></li>
+  <li><a href="#shows">Pick a show</a></li>
+  <li><a href="#plan">Updated plan</a></li>
+  <li><a href="#next">What happens next</a></li>
+</ul>
+
+<!-- ═══════════════ HOME ═══════════════ -->
+<section class="dir" id="home">
+  <h2>Home</h2>
+  <p class="thesis">Six equal tiles instead of a tall schedule. Today is a short list with a name pill per event. The lunch menu is read-only in the footer, with today's day lifted out so Sylvie can see where in the week she is. The note tile shows the last thing someone drew with the stylus.</p>
+  <div class="frame"><div class="viewport"><div class="screen wc" style="grid-template-rows: 100px minmax(0,1fr) 72px">
+    <div class="band">
+      <div><h1 style="font-size:50px">MONDAY</h1><div class="sub">October 12 · 7:42 in the morning</div></div>
+      <div class="wx">
+        <div><b>48°</b><span>cloudy, clearing<br>jacket weather</span></div>
+        <svg viewBox="0 0 64 64" fill="#e8e7e2"><circle cx="40" cy="22" r="11"/><path d="M12 48a9 9 0 0 1 2-17.8A13 13 0 0 1 39 27a8 8 0 0 1 9 8 6.5 6.5 0 0 1-1 13z"/></svg>
+      </div>
+    </div>
+    <div class="tiles3">
+      <div class="tile">
+        <h2>Today</h2>
+        <div class="ev2"><b>9:00</b><span>School<span class="who">Sylvie</span></span></div>
+        <div class="ev2"><b>12:30</b><span>Dentist<span class="who fill">Dad</span></span></div>
+        <div class="ev2"><b>4:00</b><span>Piano lesson<span class="who">Sylvie</span></span></div>
+        <div class="ev2"><b>5:30</b><span>Dinner at Grandma's</span></div>
+        <div class="ev2"><b>Night</b><span>Recycling out</span></div>
+      </div>
+      <div class="tile">
+        <h2>Sylvie's jobs<small>2 of 3</small></h2>
+        <div class="chk"><span class="box on"></span>Feed Juniper</div>
+        <div class="chk"><span class="box on"></span>Piano, 15 minutes</div>
+        <div class="chk"><span class="box"></span>Pack library books</div>
+        <div class="stars">
+          <svg viewBox="0 0 24 24" fill="#141413"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#141413"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#141413" stroke-width="2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#141413" stroke-width="2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#141413" stroke-width="2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+          <small>this week</small>
+        </div>
+        <svg class="art" viewBox="0 0 100 100" fill="#141413" style="width:84px;height:84px"><path d="M22 92c-6-22-2-44 10-56l-4-20 16 12c4-1 8-1 12 0l16-12-4 20c12 12 16 34 10 56z"/><circle cx="40" cy="48" r="4" fill="#e8e7e2"/><circle cx="60" cy="48" r="4" fill="#e8e7e2"/><path d="M44 62h12l-6 6z" fill="#e8e7e2"/></svg>
+      </div>
+      <div class="tile">
+        <h2>Note</h2>
+        <div class="note">Back at 6!<small>love, Mom ♥</small></div>
+        <div class="cta ghost">Draw a note</div>
+        <svg class="art" viewBox="0 0 100 100" fill="#141413" style="width:80px;height:80px"><path d="M70 10l20 20-46 46-26 6 6-26z"/><path d="M24 76l4-18 14 14z" fill="#e8e7e2"/><path d="M62 18l20 20-6 6-20-20z" fill="#e8e7e2" opacity=".35"/></svg>
+      </div>
+      <div class="tile">
+        <h2>Kitchen music</h2>
+        <div class="np"><b>Blue</b>Joni Mitchell<br><span style="font-size:12px">▶ California</span></div>
+        <div class="cta">Pick an album</div>
+        <svg class="art" viewBox="0 0 100 100"><circle cx="54" cy="54" r="44" fill="#141413"/><circle cx="54" cy="54" r="30" fill="none" stroke="#e8e7e2" stroke-width="2" stroke-dasharray="3 4"/><circle cx="54" cy="54" r="14" fill="#e8e7e2"/><circle cx="54" cy="54" r="3" fill="#141413"/></svg>
+      </div>
+      <div class="tile">
+        <h2>Watch</h2>
+        <div class="np">Living room TV is off.<br><span style="font-size:12px">Bluey · Kiki · Squirrel maze · Wow in the World</span></div>
+        <div class="cta ghost">Pick a show</div>
+        <svg class="art" viewBox="0 0 100 100" fill="#141413"><path d="M30 8l20 18L70 8l3 3-19 17h30a6 6 0 0 1 6 6v44a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6V34a6 6 0 0 1 6-6h30L27 11z"/><rect x="18" y="36" width="52" height="40" fill="#e8e7e2"/><rect x="18" y="36" width="52" height="40" fill="url(#ht2)"/><circle cx="82" cy="46" r="4" fill="#e8e7e2"/><circle cx="82" cy="60" r="4" fill="#e8e7e2"/><defs><pattern id="ht2" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1.1" fill="#141413"/></pattern></defs></svg>
+      </div>
+      <div class="tile">
+        <h2>Stories</h2>
+        <div class="np">Yoto is quiet.<br><span style="font-size:12px">Last played: The Gruffalo</span></div>
+        <div class="cta ghost">Pick a story</div>
+        <svg class="art" viewBox="0 0 100 100" fill="#141413"><path d="M12 18h30a8 8 0 0 1 8 8v58a6 6 0 0 0-6-6H12z"/><path d="M88 18H58a8 8 0 0 0-8 8v58a6 6 0 0 1 6-6h32z"/><rect x="18" y="28" width="18" height="3" fill="#e8e7e2"/><rect x="18" y="36" width="18" height="3" fill="#e8e7e2"/><rect x="18" y="44" width="12" height="3" fill="#e8e7e2"/><rect x="64" y="28" width="18" height="3" fill="#e8e7e2"/><rect x="64" y="36" width="18" height="3" fill="#e8e7e2"/><rect x="64" y="44" width="12" height="3" fill="#e8e7e2"/></svg>
+      </div>
+    </div>
+    <div class="foot2">
+      <div class="t">School lunch<br><span style="font-size:12px;font-family:'Young Serif',serif">this week</span></div>
+      <div class="week">
+        <div class="day today"><b>MON</b>Cheese pizza</div>
+        <div class="day"><b>TUE</b>Chicken nuggets</div>
+        <div class="day"><b>WED</b>Taco bar</div>
+        <div class="day"><b>THU</b>Mac &amp; cheese</div>
+        <div class="day"><b>FRI</b>Bean burrito</div>
+      </div>
+    </div>
+  </div></div></div>
+  <p class="caption">The footer is the day-card slot. On a day with no card it shows the next thing on the calendar; on a birthday it says so.</p>
+  <div class="notes">
+    <div><h3>Changed from round one</h3><ul><li>Today is one tile, five lines at most. Anything past five collapses into "and 2 more", which opens the full day.</li><li>Lunch menu is read-only. Today's day is lifted out in white.</li><li>New Note tile. The stylus drawing stays until someone draws over it or clears it.</li><li>Jobs tile gets a row of stars for the week.</li></ul></div>
+    <div><h3>Still to decide</h3><ul><li>Whether the Jobs tile is per kid (one tile each) or one tile with names. The mockup assumes one child's jobs show at a time; a second child would get a second tile in place of Stories, with Stories moving behind Watch.</li><li>Whether the Note tile should also show notes you send from your phone ("Running late, start dinner").</li></ul></div>
+  </div>
+</section>
+
+<!-- ═══════════════ ALL DONE ═══════════════ -->
+<section class="dir" id="done">
+  <h2>All jobs done</h2>
+  <p class="thesis">When the last box is checked, the tile inverts, a stamp slams down, the day's star fills in, and a burst of woodcut shapes sweeps across the screen for about two seconds. The screen can make a sound too. The inverted tile stays that way until midnight, so the whole family sees it was a finished day.</p>
+  <div class="frame"><div class="viewport"><div class="screen wc" style="grid-template-rows: 100px minmax(0,1fr) 72px">
+    <div class="band">
+      <div><h1 style="font-size:50px">MONDAY</h1><div class="sub">October 12 · 4:52 in the afternoon</div></div>
+      <div class="wx">
+        <div><b>59°</b><span>clear<br>no jacket</span></div>
+        <svg viewBox="0 0 64 64" fill="#e8e7e2"><circle cx="32" cy="32" r="13"/><g stroke="#e8e7e2" stroke-width="4" stroke-linecap="round"><path d="M32 6v8M32 50v8M6 32h8M50 32h8M13.6 13.6l5.7 5.7M44.7 44.7l5.7 5.7M13.6 50.4l5.7-5.7M44.7 19.3l5.7-5.7"/></g></svg>
+      </div>
+    </div>
+    <div class="tiles3">
+      <div class="tile">
+        <h2>Today</h2>
+        <div class="ev2"><b>5:30</b><span>Dinner at Grandma's</span></div>
+        <div class="ev2"><b>Night</b><span>Recycling out</span></div>
+        <div class="ev2" style="border-bottom:0"><b>Tmrw</b><span>Library books due<span class="who">Sylvie</span></span></div>
+      </div>
+      <div class="tile done">
+        <h2>Sylvie's jobs<small>3 of 3</small></h2>
+        <div class="stars">
+          <svg viewBox="0 0 24 24" fill="#e8e7e2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#e8e7e2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#e8e7e2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#e8e7e2" stroke-width="2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#e8e7e2" stroke-width="2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+          <small>3 this week</small>
+        </div>
+        <div class="stamp">ALL DONE</div>
+        <svg class="art" viewBox="0 0 100 100" fill="#e8e7e2" style="width:92px;height:92px;right:4px;bottom:2px"><path d="M22 92c-6-22-2-44 10-56l-4-20 16 12c4-1 8-1 12 0l16-12-4 20c12 12 16 34 10 56z"/><path d="M34 46l6 4 6-4" stroke="#141413" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M54 46l6 4 6-4" stroke="#141413" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M40 60q10 10 20 0" stroke="#141413" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+      </div>
+      <div class="tile">
+        <h2>Note</h2>
+        <div class="note">Back at 6!<small>love, Mom ♥</small></div>
+        <div class="cta ghost">Draw a note</div>
+      </div>
+      <div class="tile">
+        <h2>Kitchen music</h2>
+        <div class="np"><b>Rumours</b>Fleetwood Mac<br><span style="font-size:12px">▶ Dreams</span></div>
+        <div class="cta">Pick an album</div>
+        <svg class="art" viewBox="0 0 100 100"><circle cx="54" cy="54" r="44" fill="#141413"/><circle cx="54" cy="54" r="30" fill="none" stroke="#e8e7e2" stroke-width="2" stroke-dasharray="3 4"/><circle cx="54" cy="54" r="14" fill="#e8e7e2"/><circle cx="54" cy="54" r="3" fill="#141413"/></svg>
+      </div>
+      <div class="tile">
+        <h2>Watch</h2>
+        <div class="np">Living room TV is off.</div>
+        <div class="cta ghost">Pick a show</div>
+      </div>
+      <div class="tile">
+        <h2>Stories</h2>
+        <div class="np">Yoto is quiet.</div>
+        <div class="cta ghost">Pick a story</div>
+      </div>
+    </div>
+    <div class="foot2">
+      <div class="t">Tonight<br><span style="font-size:12px;font-family:'Young Serif',serif">next up</span></div>
+      <div style="font-size:15px">Dinner at Grandma's at 5:30. Bring the pie dish. Recycling goes out after.</div>
+    </div>
+    <!-- burst of woodcut shapes, mid-animation -->
+    <svg class="burst" style="left:330px;top:18px;width:64px;height:64px" viewBox="0 0 24 24" fill="#e8e7e2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+    <svg class="burst" style="left:470px;top:150px;width:40px;height:40px;transform:rotate(18deg)" viewBox="0 0 24 24" fill="#e8e7e2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+    <svg class="burst" style="left:730px;top:130px;width:48px;height:48px;transform:rotate(-12deg)" viewBox="0 0 24 24" fill="#141413"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+    <svg class="burst" style="left:690px;top:300px;width:44px;height:44px;transform:rotate(30deg)" viewBox="0 0 24 24" fill="#141413"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+    <svg class="burst" style="left:120px;top:380px;width:50px;height:50px;transform:rotate(-25deg)" viewBox="0 0 24 24" fill="#141413"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+    <svg class="burst" style="left:430px;top:420px;width:36px;height:36px;transform:rotate(10deg)" viewBox="0 0 24 24" fill="#141413"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+    <svg class="burst" style="left:560px;top:480px;width:64px;height:64px;transform:rotate(-8deg)" viewBox="0 0 24 24" fill="#e8e7e2"><path d="M12 2l3 7 7 .6-5.3 4.6 1.7 7L12 17.5 5.6 21.2l1.7-7L2 9.6 9 9z"/></svg>
+  </div></div></div>
+  <p class="caption">Shown mid-burst. The stars fly in from the edges, land on the tile, and the week's star fills. After the burst the tile stays inverted with the stamp.</p>
+  <div class="notes">
+    <div><h3>The reward, in layers</h3><ul><li><b>Instant:</b> stamp, burst, sound. Cheap and loud, every day.</li><li><b>Weekly:</b> five stars in a week turns the whole band into a "GOLDEN WEEK" banner on Saturday morning, with the cat wearing a crown. Seven stars is a different drawing.</li><li><b>Optional, your call:</b> the all-done state could unlock something concrete, like the Watch tile showing "a show is yours tonight". Easy to add later, easy to leave out.</li></ul></div>
+    <div><h3>Alternatives if the stamp is not it</h3><ul><li>The cat grows: each completed day the cat drawing gets a little bigger and fatter through the week, resetting Monday.</li><li>A hidden picture: each completed job reveals one third of a woodcut illustration that changes daily; all done shows the whole thing.</li><li>A mail slot: all done drops a "letter" into the Note tile that a parent wrote earlier in the admin page ("Ice cream after dinner").</li></ul></div>
+  </div>
+</section>
+
+<!-- ═══════════════ PICK AN ALBUM ═══════════════ -->
+<section class="dir" id="albums">
+  <h2>Pick an album</h2>
+  <p class="thesis">Crate's dashboard, bigger. Each shelf is one of your crates with its current picks, in the same order Crate shows them. Tap a cover and it plays on the kitchen speaker and the screen goes home; Crate records the pick with source "kitchen".</p>
+  <div class="frame"><div class="viewport"><div class="screen wc" style="grid-template-rows: 78px minmax(0,1fr)">
+    <div class="pband">
+      <div class="back">← Home</div>
+      <div><h1>Pick an album</h1><div class="sub">Plays on the kitchen speaker</div></div>
+      <div class="sub" style="text-align:right">Now: Blue<br>Joni Mitchell</div>
+    </div>
+    <div class="shelves">
+      <div class="shelf">
+        <h2>Favorites <small>things we love</small></h2>
+        <div class="covs">
+          <div class="cv"><div class="cov cov-stripes"></div><b>Rumours</b>Fleetwood Mac</div>
+          <div class="cv"><div class="cov cov-dots"></div><b>Harvest</b>Neil Young</div>
+          <div class="cv"><div class="cov cov-check"></div><b>Kind of Blue</b>Miles Davis</div>
+          <div class="cv"><div class="cov cov-wave"></div><b>Graceland</b>Paul Simon</div>
+          <div class="cv"><div class="cov cov-grad"></div><b>Tapestry</b>Carole King</div>
+          <div class="cv"><div class="cov cov-rings"></div><b>Abbey Road</b>The Beatles</div>
+          <div class="cv"><div class="cov cov-stripes"></div><b>Blue</b>Joni Mitchell</div>
+        </div>
+      </div>
+      <div class="shelf">
+        <h2>Something new <small>recommendations we haven't got to</small></h2>
+        <div class="covs">
+          <div class="cv"><div class="cov cov-wave"></div><b>Pink Moon</b>Nick Drake</div>
+          <div class="cv"><div class="cov cov-check"></div><b>Another Green World</b>Brian Eno</div>
+          <div class="cv"><div class="cov cov-stripes"></div><b>Moondance</b>Van Morrison</div>
+          <div class="cv"><div class="cov cov-dots"></div><b>Mingus Ah Um</b>Charles Mingus</div>
+          <div class="cv"><div class="cov cov-grad"></div><b>Grace</b>Jeff Buckley</div>
+          <div class="cv"><div class="cov cov-rings"></div><b>Astral Weeks</b>Van Morrison</div>
+          <div class="cv"><div class="cov cov-dots"></div><b>Sketches of Spain</b>Miles Davis</div>
+        </div>
+      </div>
+      <div class="shelf">
+        <h2>Kids' kitchen <small>a crate just for the kids, with a filter</small></h2>
+        <div class="covs">
+          <div class="cv"><div class="cov cov-dots"></div><b>Bluey the Album</b>Bluey</div>
+          <div class="cv"><div class="cov cov-stripes"></div><b>Sing-A-Longs</b>Elizabeth Mitchell</div>
+          <div class="cv"><div class="cov cov-rings"></div><b>Frozen</b>Soundtrack</div>
+          <div class="cv"><div class="cov cov-check"></div><b>Here Come the ABCs</b>They Might Be Giants</div>
+          <div class="cv"><div class="cov cov-wave"></div><b>Snacktime!</b>Barenaked Ladies</div>
+          <div class="cv"><div class="cov cov-grad"></div><b>Encanto</b>Soundtrack</div>
+          <div class="cv"><div class="cov cov-check"></div><b>Moana</b>Soundtrack</div>
+        </div>
+      </div>
+    </div>
+  </div></div></div>
+  <p class="caption">Covers are the real album art from Spotify, shown in high-contrast grayscale, the way Crate's paper theme already does it.</p>
+  <div class="notes">
+    <div><h3>Notes</h3><ul><li>No search, no library browsing. If an album is not in a crate, it is not on this screen.</li><li>A "Kids' kitchen" crate is just a Crate crate with a filter; nothing new to build there.</li><li>Playlists appear on these shelves too, with a square playlist cover.</li></ul></div>
+    <div><h3>Where Crate changes</h3><ul><li>A household token with read and play scopes, so the tablet can't edit crates.</li><li>Accept a `source: "kitchen"` on play, which it already does.</li></ul></div>
+  </div>
+</section>
+
+<!-- ═══════════════ PICK A SHOW ═══════════════ -->
+<section class="dir" id="shows">
+  <h2>Pick a show</h2>
+  <p class="thesis">Four shelves, one per kind of thing, with the service on each poster. Tapping a poster asks once ("Play on the living room TV?") so a stray tap in the kitchen never starts a movie in the living room. Items on a service you stopped paying for simply leave the shelf.</p>
+  <div class="frame"><div class="viewport"><div class="screen wc" style="grid-template-rows: 78px minmax(0,1fr)">
+    <div class="pband">
+      <div class="back">← Home</div>
+      <div><h1>Pick a show</h1><div class="sub">Plays on the living room TV</div></div>
+      <div class="sub" style="text-align:right">TV is off</div>
+    </div>
+    <div class="shelves2">
+      <div class="shelf">
+        <h2>Shows</h2>
+        <div class="posters">
+          <div class="ps"><div class="cov cov-dots"></div><b>Bluey</b><span class="svc">DISNEY+</span></div>
+          <div class="ps"><div class="cov cov-stripes"></div><b>Octonauts</b><span class="svc fill">NETFLIX</span></div>
+          <div class="ps"><div class="cov cov-wave"></div><b>Hilda</b><span class="svc fill">NETFLIX</span></div>
+          <div class="ps"><div class="cov cov-check"></div><b>Puffin Rock</b><span class="svc fill">NETFLIX</span></div>
+          <div class="ps"><div class="cov cov-rings"></div><b>Tumble Leaf</b><span class="svc">PRIME</span></div>
+        </div>
+      </div>
+      <div class="shelf">
+        <h2>Movies</h2>
+        <div class="posters">
+          <div class="ps"><div class="cov cov-wave sel"></div><b>Kiki's Delivery Service</b><span class="svc">MAX</span></div>
+          <div class="ps"><div class="cov cov-grad"></div><b>My Neighbor Totoro</b><span class="svc">MAX</span></div>
+          <div class="ps"><div class="cov cov-dots"></div><b>Paddington 2</b><span class="svc fill">NETFLIX</span></div>
+          <div class="ps"><div class="cov cov-stripes"></div><b>Encanto</b><span class="svc">DISNEY+</span></div>
+        </div>
+      </div>
+      <div class="shelf">
+        <h2>Videos <small>YouTube, only these</small></h2>
+        <div class="posters">
+          <div class="ps"><div class="cov cov-check"></div><b>Backyard squirrel maze</b><span class="svc">YOUTUBE</span></div>
+          <div class="ps"><div class="cov cov-rings"></div><b>How big is the ocean?</b><span class="svc">YOUTUBE</span></div>
+          <div class="ps"><div class="cov cov-grad"></div><b>Making a sword from a nail</b><span class="svc">YOUTUBE</span></div>
+        </div>
+      </div>
+      <div class="shelf">
+        <h2>Listen <small>podcasts, on the TV or here</small></h2>
+        <div class="posters">
+          <div class="ps"><div class="cov cov-stripes"></div><b>Wow in the World</b><span class="svc">PODCAST</span></div>
+          <div class="ps"><div class="cov cov-dots"></div><b>Brains On!</b><span class="svc">PODCAST</span></div>
+          <div class="ps"><div class="cov cov-wave"></div><b>Circle Round</b><span class="svc">PODCAST</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="scrim"></div>
+    <div class="confirm">
+      <b>Kiki's Delivery Service</b>
+      <span style="font-size:13px">Max · 1h 43m · Play on the living room TV?</span>
+      <div class="row"><div>Not now</div><div class="fill">Play</div></div>
+    </div>
+  </div></div></div>
+  <p class="caption">Shown with the confirmation open. Posters are the real artwork, grayscale.</p>
+  <div class="notes">
+    <div><h3>With the dongle Chromecast</h3><p>This screen works as drawn for Videos and Listen: the tablet casts YouTube and podcast audio directly. For Shows and Movies on Disney+, Max and Netflix, the dongle cannot be told "play this title" by anything except that service's own app. See the plan below for the two ways around that.</p></div>
+    <div><h3>Keeping it current</h3><p>Each movie and show carries a TMDB id. A weekly job checks where it streams, compares against the services you have marked as paid, and marks anything that moved. The admin page shows a short "needs attention" list, and the poster shows a small "moved" corner until you fix or remove it.</p></div>
+  </div>
+</section>
+
+<!-- ═══════════════ UPDATED PLAN ═══════════════ -->
+<section class="dir" id="plan">
+  <h2>Updated plan</h2>
+  <p class="lede">Your answers change the TV section and simplify the rest. The repo's <code>docs/PROPOSAL.md</code> is updated to match.</p>
+  <table class="arch">
+    <tr><th>TV, honest version</th><td>A dongle Chromecast only runs Cast receiver apps. The tablet can cast <b>YouTube</b> (the YouTube receiver, driven the way the Home Assistant integration does it) and <b>podcasts</b> (the episode's audio URL from the show's RSS feed, into the default media receiver). <b>Disney+, Max and Netflix cannot be started on a given title</b> from anything but their own apps; their Cast receivers only accept playback from an authenticated sender app.</td></tr>
+    <tr><th>Option A: swap the dongle</th><td>A Google TV Streamer (or the older Chromecast with Google TV) speaks the Android TV remote protocol on the home network. The tablet can then launch any title on any installed app by deep link, plus play, pause, volume and back. This is the only way "pick Kiki, it plays" works end to end for the paid services. It is the change I would make; it is a one-time cost and the rest of the design stays the same.</td></tr>
+    <tr><th>Option B: keep the dongle</th><td>Since the DC-1 has the Play Store, install Disney+, Max and Netflix on the tablet. Tapping a Shows or Movies poster opens that app on the tablet directly at the title (their Android apps accept the same web links), and the kid taps the app's own Cast button once. Two taps instead of one, and the service's app is briefly on screen, so the curation is softer. YouTube and podcasts still go straight to the TV. Workable, not as clean.</td></tr>
+    <tr><th>Cast on the tablet</th><td>With Play services present, the app uses the official Google Cast SDK for Android as a sender, which also gives a proper remote (play, pause, seek, volume, stop) for anything the tablet started.</td></tr>
+    <tr><th>Yoto</th><td>Yoto's developer API exposes your purchased cards with their chapters and audio streams, and MQTT control of the player. So "Pick a story" offers your cards, and a second step asks <b>where</b>: the Yoto player (via its API) or the tablet's own speaker (streams the card). I don't believe the Yoto app can cast to a Chromecast, so the TV is not an option here, and that is fine for stories.</td></tr>
+    <tr><th>Calendar</th><td>One shared Google calendar. A service account is shared on it read-only; no OAuth, no token refresh. "Who" comes from a name prefix in the event title ("Sylvie: piano") or from a per-person keyword list in config.</td></tr>
+    <tr><th>Zo</th><td>Background script, as Zo suggested. Monday 6:00 am, one <code>curl -X POST</code> with a bearer token and the menu as JSON. The backend keeps the last payload so a failed Monday still shows last week's card with a "may be out of date" line. I'll give you the exact script once the endpoint exists.</td></tr>
+    <tr><th>Google Play</th><td>Means we can ship the app through Play's internal testing track instead of sideloading, and use Play services for Cast and sign-in.</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════ NEXT ═══════════════ -->
+<section class="dir" id="next">
+  <h2>What happens next</h2>
+  <p>If this round is right, the build goes in this order, each step leaving something you can put on the counter:</p>
+  <ol class="steps">
+    <li><b>Shell.</b> The Android app with the Woodcut theme, kiosk mode, night clock, and a stub backend. Real clock, real weather, fake everything else. Installed on the DC-1 by the end.</li>
+    <li><b>The day.</b> Calendar and jobs for real, the checkbox, the all-done moment, the admin page for adding jobs.</li>
+    <li><b>Music.</b> Crate's household token, the album picker, the now-playing tile and remote.</li>
+    <li><b>Cards and the lunch menu.</b> The cards endpoint, the footer slot, the Zo script.</li>
+    <li><b>Watch.</b> YouTube and podcasts to the dongle; Shows and Movies via whichever option you pick; the catalog admin and the weekly availability check.</li>
+    <li><b>Stories and the note.</b> Yoto, then the stylus note tile.</li>
+  </ol>
+  <p>Two things to tell me: which Chromecast option (swap or keep), and whether the stamp-and-burst is the right "something cool" or you'd rather one of the alternatives.</p>
+</section>
+</div>
+
+<script>
+(function () {
+  function fit() {
+    document.querySelectorAll('.frame').forEach(function (f) {
+      var vp = f.querySelector('.viewport');
+      var s = vp.clientWidth / 800;
+      f.querySelector('.screen').style.transform = 'scale(' + s + ')';
+    });
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  if (window.ResizeObserver) { new ResizeObserver(fit).observe(document.body); }
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fit); }
+})();
+</script>
+
+</body>
+</html>
