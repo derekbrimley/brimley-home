@@ -97,7 +97,7 @@ a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 .r3 .band .wx svg { width: 54px; height: 54px; }
 .r3 .band .wx b { font-size: 32px; font-weight: 700; display: block; line-height: 1; }
 .r3 .band .wx span { font-size: 13px; font-weight: 500; }
-.r3 .body { display: grid; grid-template-columns: 1.3fr 1fr; grid-template-rows: minmax(0,1.05fr) minmax(0,1fr); gap: 10px; padding: 10px 14px; min-height: 0; }
+.r3 .body { display: grid; grid-template-columns: 1fr 1.4fr; grid-template-rows: minmax(0,1.05fr) minmax(0,1fr); gap: 10px; padding: 10px 14px; min-height: 0; }
 .r3 .card { border: 4px solid var(--ink); border-radius: 18px; padding: 9px 14px 10px; position: relative; overflow: hidden; background: var(--paper); min-height: 0; }
 .r3 .card h2 { font-size: 19px; font-weight: 700; margin: 0 0 4px; display: flex; align-items: baseline; gap: 8px; }
 .r3 .card h2 small { font-size: 12px; font-weight: 500; }
@@ -105,43 +105,45 @@ a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 .r3 .jobs { grid-row: 2; grid-column: 1; }
 .r3 .playing { grid-row: 1; grid-column: 2; }
 .r3 .note { grid-row: 2; grid-column: 2; }
-.r3 .ev { display: grid; grid-template-columns: 54px 1fr; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 2px solid var(--ink); font-size: 16px; font-weight: 500; line-height: 1.2; }
+.r3 .ev { display: grid; grid-template-columns: 48px 1fr; gap: 6px; align-items: center; padding: 4px 0; border-bottom: 2px solid var(--ink); font-size: 14px; font-weight: 500; line-height: 1.2; }
 .r3 .ev:last-child { border-bottom: 0; }
-.r3 .ev b { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 16px; }
+.r3 .ev b { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 14px; }
 .r3 .who { display: inline-block; font-size: 11px; font-weight: 600; border: 2px solid var(--ink); border-radius: 999px; padding: 0 7px; line-height: 16px; margin-left: 6px; vertical-align: 2px; }
 .r3 .who.fill { background: var(--ink); color: var(--paper); }
 .r3 .ev.now { background: var(--ink); color: var(--paper); margin: 0 -14px; padding: 6px 14px; border-radius: 0; }
 .r3 .ev.now .who { border-color: var(--paper); }
-.r3 .chk { display: flex; gap: 10px; align-items: center; font-size: 15px; font-weight: 500; padding: 2px 0; max-width: 250px; }
+.r3 .chk { display: flex; gap: 10px; align-items: center; font-size: 14px; font-weight: 500; padding: 2px 0; max-width: 240px; }
 .r3 .chk .box { width: 24px; height: 24px; border: 3px solid var(--ink); border-radius: 8px; flex: 0 0 auto; position: relative; }
 .r3 .chk .box.on { background: var(--ink); }
 .r3 .chk .box.on::after { content: ""; position: absolute; left: 6px; top: 0px; width: 6px; height: 12px; border: solid var(--paper); border-width: 0 3px 3px 0; transform: rotate(45deg); }
 .r3 .stars { display: flex; gap: 4px; align-items: center; margin-top: 0; }
 .r3 .stars svg { width: 17px; height: 17px; }
 .r3 .stars small { font-size: 11px; font-weight: 500; margin-left: 4px; }
-.r3 .bounty { display: flex; align-items: center; gap: 10px; border: 3px dashed var(--ink); border-radius: 12px; padding: 3px 5px 3px 10px; margin-top: 5px; font-size: 13px; font-weight: 500; max-width: 300px; }
+.r3 .bounty { display: flex; align-items: center; gap: 8px; border: 3px dashed var(--ink); border-radius: 12px; padding: 3px 5px 3px 10px; margin-top: 5px; font-size: 12px; font-weight: 500; line-height: 1.2; }
 .r3 .bounty b { font-weight: 700; }
 .r3 .bounty .btn { margin-left: auto; }
 .r3 .btn { display: inline-block; background: var(--ink); color: var(--paper); font-weight: 700; font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 3px solid var(--ink); white-space: nowrap; }
 .r3 .btn.ghost { background: var(--paper); color: var(--ink); }
 .r3 .art { position: absolute; right: 10px; bottom: 6px; width: 78px; height: 78px; }
+.r3 .jobs .art { width: 54px; height: 54px; right: 12px; top: 8px; bottom: auto; }
 .r3 .playing { display: grid; grid-template-rows: auto 1fr auto; align-content: start; }
-.r3 .big { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
-.r3 .big .cov { width: 96px; height: 96px; border: 4px solid var(--ink); border-radius: 12px; }
-.r3 .big .t { font-size: 18px; font-weight: 700; line-height: 1.1; }
-.r3 .big .a { font-size: 14px; font-weight: 500; margin-top: 2px; }
+.r3 .big { display: grid; grid-template-columns: 128px 1fr; gap: 16px; align-items: start; }
+.r3 .big .cov { width: 128px; height: 128px; border: 4px solid var(--ink); border-radius: 12px; }
+.r3 .big .t { font-size: 22px; font-weight: 700; line-height: 1.1; }
+.r3 .big .a { font-size: 15px; font-weight: 500; margin-top: 2px; }
 .r3 .big .where { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 600; border: 2px solid var(--ink); border-radius: 999px; padding: 1px 8px; }
 .r3 .tr { display: flex; gap: 6px; margin: 6px 0 0; }
-.r3 .tr div { width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.r3 .tr div { width: 40px; height: 40px; border: 3px solid var(--ink); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 .r3 .tr div.fill { background: var(--ink); }
-.r3 .tr svg { width: 16px; height: 16px; }
+.r3 .tr svg { width: 18px; height: 18px; }
 .r3 .tr .bar { flex: 1; align-self: center; height: 8px; border: 2px solid var(--ink); border-radius: 999px; position: relative; width: auto; display: block; }
 .r3 .tr .bar::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 58%; background: var(--ink); border-radius: 999px; }
 .r3 .quiet { font-size: 12px; font-weight: 500; margin-top: 2px; }
-.r3 .playbtn { display: block; text-align: center; font-size: 15px; padding: 8px; border-radius: 14px; margin-top: 6px; }
-.r3 .hand { font-family: "Caveat", cursive; font-size: 28px; font-weight: 700; line-height: 1; transform: rotate(-3deg); margin: 4px 0 0 2px; }
-.r3 .hand small { display: block; font-size: 19px; font-weight: 500; margin-top: 2px; }
-.r3 .note .row { display: flex; gap: 8px; margin-top: 10px; }
+.r3 .playbtn { display: block; text-align: center; font-size: 16px; padding: 9px; border-radius: 14px; margin-top: 6px; }
+.r3 .hand { font-family: "Caveat", cursive; font-size: 40px; font-weight: 700; line-height: 1; transform: rotate(-3deg); margin: 4px 0 0 2px; }
+.r3 .hand small { display: block; font-size: 24px; font-weight: 500; margin-top: 2px; }
+.r3 .note .row { display: flex; gap: 8px; margin-top: 14px; }
+.r3 .note .art { width: 84px; height: 84px; }
 .r3 .foot { background: var(--ink); color: var(--paper); display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 16px; padding: 0 18px; }
 .r3 .foot .t { font-size: 16px; font-weight: 700; line-height: 1.05; }
 .r3 .foot .t span { display: block; font-size: 11px; font-weight: 500; }
@@ -197,12 +199,11 @@ a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 
 <div class="wrap">
 <h1>Round three</h1>
-<p class="lede">Fredoka throughout, the woodcut shapes kept. The grid is now four cards of different sizes with one combined "Playing" card, a bounty slot in the jobs card, and "Our makes" behind a button. Below the screens: where shows come from, and the Chromecast answer.</p>
+<p class="lede">Fredoka throughout, the woodcut shapes kept. Playing and Note are the big cards, Today and Jobs the small ones, with a bounty slot in Jobs and "Our makes" behind a button. Below the screens: the Google Sheet that feeds the catalog, and the Chromecast answer.</p>
 
 <ul class="toc">
   <li><a href="#home">Home</a></li>
   <li><a href="#play">Play something</a></li>
-  <li><a href="#admin">Adding things (phone)</a></li>
   <li><a href="#catalog">Where shows come from</a></li>
   <li><a href="#tv">The Chromecast</a></li>
 </ul>
@@ -210,7 +211,7 @@ a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 <!-- ═══════════════ HOME ═══════════════ -->
 <section class="dir" id="home">
   <h2>Home</h2>
-  <p class="thesis">Today is the biggest thing and sits top left, where the eye lands. Playing is the second thing, with the cover as the one picture on the screen. Jobs is the kids' part. Note is the small warm corner. Rounded corners and Fredoka take the edge off the black.</p>
+  <p class="thesis">Playing and Note are the big cards, on the right. Today and Jobs are the small ones, on the left. The cover and the handwriting are the two pictures on the screen; the schedule and the checklist are the quiet text. Rounded corners and Fredoka take the edge off the black.</p>
   <div class="frame"><div class="viewport"><div class="screen r3">
     <div class="band">
       <div><h1>Monday</h1><div class="sub">October 12 · 7:42 in the morning</div></div>
@@ -225,7 +226,7 @@ a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
         <div class="ev"><b>9:00</b><span>School<span class="who">Sylvie</span></span></div>
         <div class="ev"><b>12:30</b><span>Dentist<span class="who fill">Dad</span></span></div>
         <div class="ev"><b>4:00</b><span>Piano lesson<span class="who">Sylvie</span></span></div>
-        <div class="ev"><b>5:30</b><span>Dinner at Grandma's · bring the pie dish</span></div>
+        <div class="ev"><b>5:30</b><span>Dinner at Grandma's</span></div>
         <div class="ev"><b>Night</b><span>Recycling out</span></div>
       </div>
       <div class="card jobs">
@@ -262,8 +263,8 @@ a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
       <div class="card note">
         <h2>Note</h2>
         <div class="hand">Back at 6!<small>love, Mom ♥</small></div>
-        <div class="row"><span class="btn ghost">Draw a note</span><span class="btn ghost">Our makes</span></div>
-        <svg class="art" viewBox="0 0 100 100" fill="#141413" style="width:64px;height:64px"><path d="M70 10l20 20-46 46-26 6 6-26z"/><path d="M24 76l4-18 14 14z" fill="#e8e7e2"/></svg>
+        <div class="row"><span class="btn">Draw a note</span><span class="btn ghost">Our makes</span></div>
+        <svg class="art" viewBox="0 0 100 100" fill="#141413"><path d="M70 10l20 20-46 46-26 6 6-26z"/><path d="M24 76l4-18 14 14z" fill="#e8e7e2"/></svg>
       </div>
     </div>
     <div class="foot">
@@ -336,64 +337,52 @@ a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
   <p class="caption">Tapping a poster still asks once before the TV starts. The Music tab is the album shelves from round two, in Fredoka.</p>
 </section>
 
-<!-- ═══════════════ ADMIN ═══════════════ -->
-<section class="dir" id="admin">
-  <h2>Adding things, from a phone</h2>
-  <p class="thesis">A small web page at the same address as the dashboard, signed in with your Google accounts (yours and your wife's, nobody else). One box: paste a link or type a title. It fills in the rest.</p>
-  <div class="two" style="grid-template-columns: minmax(0,380px) 1fr; gap: 32px; align-items: start">
-    <div class="frame phone"><div class="viewport"><div class="screen ph">
-      <div class="top"><h1>Add something</h1><span>Brimley Home</span></div>
-      <div class="input"><span>disneyplus.com/movies/kikis-delive…</span><small>paste</small></div>
-      <div class="preview">
-        <div class="cov cov-wave"></div>
-        <div>
-          <b>Kiki's Delivery Service</b>
-          <div class="meta">1989 · 1h 43m · Studio Ghibli</div>
-          <div><span class="pill fill">Movie</span><span class="pill">Max</span><span class="pill">Playable on the TV ✓</span></div>
-        </div>
-      </div>
-      <span class="btn">Add to Movies</span>
-      <span class="btn ghost">Add to a different shelf</span>
-      <h3>Shelves</h3>
-      <div class="list">
-        <div class="row"><span>Shows</span><small>5</small></div>
-        <div class="row"><span>Movies</span><small>4</small></div>
-        <div class="row"><span>Videos</span><small>3</small></div>
-        <div class="row"><span>Listen</span><small>3</small></div>
-        <div class="row warn"><span>Needs attention<br><small>Puffin Rock left Netflix on Oct 1</small></span><small>1</small></div>
-      </div>
-      <div class="steps">On the TV app: Share → Copy link → paste here. Or type a title and it finds the poster; you add the link later if you want it playable.</div>
-    </div></div></div>
-    <div>
-      <h3>What the box accepts</h3>
-      <ul class="plain-list">
-        <li><b>A link from a streaming app's Share button.</b> Disney+, Max, Netflix, Prime and YouTube all have one. The service is read from the link, the title and poster come from TMDB (movies and shows) or from YouTube itself. This is the one that makes a title playable from the dashboard.</li>
-        <li><b>A title.</b> "Kiki's Delivery Service" finds the movie, its poster, and where it streams right now. It gets the poster and shelf; it is marked "not playable yet" until a link is pasted.</li>
-        <li><b>A podcast name or RSS link.</b> Searches Apple's podcast directory, shows the latest episodes, and plays straight from the feed.</li>
-      </ul>
-      <h3>What else is on that page</h3>
-      <ul class="plain-list">
-        <li>Jobs: add a job for a kid, one-off or on certain days. Post a bounty with an amount. Approve a finished bounty.</li>
-        <li>Notes: send a text note to the Note card.</li>
-        <li>Makes: add a project with a picture and a link.</li>
-        <li>Services: tick the ones you pay for. Untick Netflix and its shelf items disappear from the tablet that minute.</li>
-        <li>Needs attention: anything that moved service, or a link that stopped working.</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
 <!-- ═══════════════ CATALOG ═══════════════ -->
 <section class="dir" id="catalog">
   <h2>Where shows come from</h2>
-  <p>The catalog is a table in the dashboard's own database, not a feed from any service. Nothing appears on the tablet that one of you didn't add. What the backend does on top of that:</p>
-  <ul class="plain-list">
-    <li><b>Posters and facts</b> come from TMDB, the open movie database behind most streaming apps' metadata. Free key, no limits that matter at family scale.</li>
-    <li><b>Where it streams</b> also comes from TMDB (its watch-provider data is sourced from JustWatch). A weekly job rechecks every movie and show. If a title leaves a service you pay for, it goes to "Needs attention" and the poster gets a small "moved" corner on the tablet until you fix or remove it.</li>
-    <li><b>The playable link</b> is the one you paste from the service's app. There is no public database of Disney+ or Max title links, so this stays a human step, and it is a two-tap one.</li>
-    <li><b>YouTube</b> items are just video ids; the title and thumbnail are fetched once. <b>Podcasts</b> are RSS feeds; episodes are read live so the newest is always there.</li>
-  </ul>
-  <p>If you would rather not have an admin page at all, the same table can be a shared Google Sheet that the backend reads every few minutes. It is less friendly (no preview, errors land in a column) but it is zero UI. I'd build the page; it is a day's work and your wife gets a preview before anything lands on the kitchen screen.</p>
+  <p class="thesis">One Google Sheet is the master list. You and your wife type titles into it from your phones; the app does the rest. Nothing needs attention, ever: a title that isn't streaming on a service you pay for just doesn't appear on the tablet.</p>
+  <div class="two" style="grid-template-columns: minmax(0,380px) 1fr; gap: 32px; align-items: start">
+    <div class="frame phone"><div class="viewport"><div class="screen ph">
+      <div class="top"><h1>Brimley Home</h1><span>Google Sheets</span></div>
+      <div class="list">
+        <div class="row" style="background:#141413;color:#fff"><span><b>Watch</b></span><small style="color:#fff">Listen · Jobs · Bounties · Makes</small></div>
+        <div class="row"><span>Title</span><small>Shelf · Found on</small></div>
+        <div class="row"><span>Bluey</span><small>Shows · Disney+</small></div>
+        <div class="row"><span>Octonauts</span><small>Shows · Netflix</small></div>
+        <div class="row"><span>Hilda</span><small>Shows · Netflix</small></div>
+        <div class="row"><span>Puffin Rock</span><small>Shows · <i>not streaming</i></small></div>
+        <div class="row"><span>Tumble Leaf</span><small>Shows · Prime</small></div>
+        <div class="row"><span>Kiki's Delivery Service</span><small>Movies · Max</small></div>
+        <div class="row"><span>My Neighbor Totoro</span><small>Movies · Max</small></div>
+        <div class="row"><span>Paddington 2</span><small>Movies · Netflix</small></div>
+        <div class="row"><span>Encanto</span><small>Movies · Disney+</small></div>
+        <div class="row"><span>youtube.com/watch?v=hFZFjoX2cGg</span><small>Videos · YouTube</small></div>
+        <div class="row"><span>Wow in the World</span><small>Listen · podcast</small></div>
+        <div class="row"><span style="color:#777">Type a title here…</span><small></small></div>
+      </div>
+      <div class="steps">You fill the first two columns (Title, Shelf). The app fills "Found on" and a hidden link column every few hours. Blank "Found on" means it stays off the tablet.</div>
+    </div></div></div>
+    <div>
+      <h3>How a row becomes a poster on the tablet</h3>
+      <ol class="steps">
+        <li>You type a title and pick a shelf (Shows, Movies, Videos, Listen). A YouTube link or a podcast name works the same way.</li>
+        <li>Every few hours the app reads the sheet, looks the title up on TMDB for its poster and facts, and asks where it streams in the US right now.</li>
+        <li>It keeps only services on your paid list (a short "Services" tab in the same sheet: Disney+, Max, Netflix, Prime). The first match wins and its title link is stored, so the tablet can start it on the TV.</li>
+        <li>No match: the row stays in the sheet, "Found on" stays blank, and the tablet never shows it. When the title comes back to one of your services, it reappears on its own.</li>
+      </ol>
+      <h3>Where the links come from</h3>
+      <p>TMDB (official, free) answers "which services carry this title". JustWatch's data (the same source TMDB uses, through its public but undocumented GraphQL endpoint) also returns the title's page on each service, which is the link the TV needs. The app uses TMDB for availability and JustWatch for the link, and falls back to a plain "open the app" if a link is ever missing. Netflix links are stable ids; Disney+ and Max links are per-title pages that their TV apps open directly.</p>
+      <h3>Same sheet, other tabs</h3>
+      <ul class="plain-list">
+        <li><b>Listen:</b> podcast names; the app finds the feed and plays the latest episodes.</li>
+        <li><b>Jobs:</b> kid, job, days of the week. The tablet keeps the done-state per day.</li>
+        <li><b>Bounties:</b> job, amount, status. "I did it" on the tablet writes "waiting" into the status cell; you change it to "paid" and the ledger ticks.</li>
+        <li><b>Makes:</b> title, who, link, picture.</li>
+        <li><b>Services:</b> the ones you pay for. Delete a row and that service's titles vanish from the tablet on the next sync.</li>
+      </ul>
+      <p>No admin page in the first version. If the sheet ever gets annoying, a table view in the app can read and write the same rows.</p>
+    </div>
+  </div>
 </section>
 
 <!-- ═══════════════ TV ═══════════════ -->
