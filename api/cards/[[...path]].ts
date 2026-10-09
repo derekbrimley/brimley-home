@@ -10,7 +10,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const who = authenticate(req.headers.authorization);
   if (!who) return res.status(401).json({ error: "Unauthorized" });
 
-  const path = ([] as string[]).concat((req.query.path as string | string[] | undefined) ?? []);
+  // Vercel won't match the bare /api/cards against [[...path]], so vercel.json
+  // rewrites it to /api/cards/index.
+  const path = ([] as string[]).concat((req.query.path as string | string[] | undefined) ?? []).filter((s) => s !== "index");
 
   if (req.method === "GET" && path.length === 0) {
     return res.status(200).json({ cards: activeCards(await getCardRows(), new Date().toISOString()) });

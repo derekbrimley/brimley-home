@@ -9,7 +9,9 @@ export const config = { maxDuration: 15 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!authenticate(req.headers.authorization)) return res.status(401).json({ error: "Unauthorized" });
-  const path = ([] as string[]).concat((req.query.path as string | string[] | undefined) ?? []).join("/");
+  // Vercel won't match the bare /api/music against [[...path]], so vercel.json
+  // rewrites it to /api/music/index.
+  const path = ([] as string[]).concat((req.query.path as string | string[] | undefined) ?? []).filter((s) => s !== "index").join("/");
   const body = (req.body ?? {}) as Record<string, unknown>;
 
   try {
