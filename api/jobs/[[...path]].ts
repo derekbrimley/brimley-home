@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { authenticate } from "../../lib/auth";
+import { subPath } from "../../lib/route";
 import { getSheetCache, recordBountyClaim, setCompletion } from "../../lib/queries";
 import { writeBountyStatus } from "../../lib/sheet";
 import { localDateString } from "../../lib/time";
@@ -10,7 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).end();
   if (!authenticate(req.headers.authorization)) return res.status(401).json({ error: "Unauthorized" });
 
-  const path = ([] as string[]).concat((req.query.path as string | string[] | undefined) ?? []);
+  const path = subPath(req.url, "/api/jobs");
   const body = (req.body ?? {}) as Record<string, unknown>;
   const tz = process.env.HOME_TZ ?? "America/Denver";
 

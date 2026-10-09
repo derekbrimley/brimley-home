@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { authenticate } from "../../lib/auth";
+import { subPath } from "../../lib/route";
 import { activeCards, validateCardInput } from "../../lib/cards";
 import { deleteCard, getCardRows, insertCard } from "../../lib/queries";
 
@@ -10,9 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const who = authenticate(req.headers.authorization);
   if (!who) return res.status(401).json({ error: "Unauthorized" });
 
-  // Vercel won't match the bare /api/cards against [[...path]], so vercel.json
-  // rewrites it to /api/cards/index.
-  const path = ([] as string[]).concat((req.query.path as string | string[] | undefined) ?? []).filter((s) => s !== "index");
+  const path = subPath(req.url, "/api/cards");
 
   if (req.method === "GET" && path.length === 0) {
     return res.status(200).json({ cards: activeCards(await getCardRows(), new Date().toISOString()) });

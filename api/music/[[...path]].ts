@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { authenticate } from "../../lib/auth";
+import { subPath } from "../../lib/route";
 import { controlKitchen, fetchShelves, playOnKitchen, type ControlAction } from "../../lib/crate";
 
 // GET  /api/music            shelves: Crate's crates with their current picks
@@ -9,9 +10,7 @@ export const config = { maxDuration: 15 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!authenticate(req.headers.authorization)) return res.status(401).json({ error: "Unauthorized" });
-  // Vercel won't match the bare /api/music against [[...path]], so vercel.json
-  // rewrites it to /api/music/index.
-  const path = ([] as string[]).concat((req.query.path as string | string[] | undefined) ?? []).filter((s) => s !== "index").join("/");
+  const path = subPath(req.url, "/api/music").join("/");
   const body = (req.body ?? {}) as Record<string, unknown>;
 
   try {
