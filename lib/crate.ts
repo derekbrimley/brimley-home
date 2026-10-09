@@ -1,5 +1,5 @@
 // Music comes from Crate, through a household token (read + play). Shapes here
-// mirror Crate's api/spotify/[[...path]].ts and api/picks/dashboard.ts (?shelves=n).
+// mirror Crate's api/spotify/[[...path]].ts and api/crates/index.ts (?shelves=n).
 import type { Playing } from "./types";
 
 export interface CrateShelf {
@@ -97,7 +97,7 @@ export function toShelves(resp: CrateShelvesResponse): CrateShelf[] {
 }
 
 export async function fetchShelves(): Promise<CrateShelf[]> {
-  return toShelves(await crate<CrateShelvesResponse>(`/picks/dashboard?shelves=${SHELF_SIZE}`));
+  return toShelves(await crate<CrateShelvesResponse>(`/crates?shelves=${SHELF_SIZE}`));
 }
 
 // The kitchen speaker is found by name (KITCHEN_DEVICE_NAME, substring match,
