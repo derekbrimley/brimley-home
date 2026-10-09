@@ -16,16 +16,15 @@ describe("toPlaying", () => {
 });
 
 describe("toShelves", () => {
-  it("orders by crate position and drops items with no uri", () => {
+  it("keeps Crate's order and drops items with no uri", () => {
     const shelves = toShelves({
-      crates: [
-        { id: "new", items: [{ id: 2, title: "Pink Moon", creator: "Nick Drake", image_url: null, external_uri: "spotify:album:p", media_type: "album" }] },
-        { id: "fav", items: [
+      shelves: [
+        { id: "fav", name: "Favorites", items: [
           { id: 1, title: "Blue", creator: "Joni Mitchell", image_url: "b.jpg", external_uri: "spotify:album:b", media_type: "album" },
           { id: 3, title: "Broken", creator: "?", image_url: null, external_uri: null, media_type: "album" },
         ] },
+        { id: "new", name: "Something new", items: [{ id: 2, title: "Pink Moon", creator: "Nick Drake", image_url: null, external_uri: "spotify:album:p", media_type: "album" }] },
       ],
-      _config: { crates: [{ id: "fav", name: "Favorites", position: 0 }, { id: "new", name: "Something new", position: 1 }] },
     });
     expect(shelves.map((s) => [s.name, s.items.map((i) => i.title)])).toEqual([["Favorites", ["Blue"]], ["Something new", ["Pink Moon"]]]);
   });

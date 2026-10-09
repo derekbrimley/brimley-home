@@ -1,5 +1,5 @@
 // Music comes from Crate, through a household token (read + play). Shapes here
-// mirror Crate's api/spotify/[[...path]].ts and api/picks/dashboard.ts.
+// mirror Crate's api/spotify/[[...path]].ts and api/picks/dashboard.ts (?shelves=n).
 import type { Playing } from "./types";
 
 export interface CrateShelf {
@@ -29,10 +29,7 @@ interface CrateState {
 interface CrateDevice { id: string; name: string; type: string; is_active: boolean }
 
 interface CrateItem { id: number; title: string; creator: string; image_url: string | null; external_uri: string | null; media_type: string }
-interface CrateDashboard {
-  crates?: { id: string; items: CrateItem[]; deferred?: boolean }[];
-  _config?: { crates?: { id: string; name: string; position: number }[] };
-}
+interface CrateShelvesResponse { shelves?: { id: string; name: string; items: CrateItem[] }[] }
 
 function configured(): { base: string; token: string } | null {
   const base = process.env.CRATE_API_URL;
@@ -84,31 +81,23 @@ export async function fetchKitchenPlaying(): Promise<Playing | null> {
   return toPlaying(state);
 }
 
-// Shelves = Crate's crates with their current picks, in Crate's order. Crates
-// Crate defers (the AI ones) are fetched one by one with a short timeout.
-export function toShelves(dash: CrateDashboard): CrateShelf[] {
-  const defs = [...(dash._config?.crates ?? [])].sort((a, b) => a.position - b.position);
-  const byId = new Map((dash.crates ?? []).map((c) => [c.id, c]));
-  return defs.map((d) => ({
-    id: d.id,
-    name: d.name,
-    items: (byId.get(d.id)?.items ?? [])
+// Shelves come ranked from Crate (`?shelves=n`): each crate's pool in the same
+// weighted-random order its own page shows, cut to n. Items without a Spotify
+// uri can't be started from here and are dropped.
+export const SHELF_SIZE = 8;
+
+export function toShelves(resp: CrateShelvesResponse): CrateShelf[] {
+  return (resp.shelves ?? []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    items: s.items
       .filter((i) => i.external_uri)
       .map((i) => ({ id: i.id, title: i.title, creator: i.creator, imageUrl: i.image_url, uri: i.external_uri!, mediaType: i.media_type })),
   }));
 }
 
 export async function fetchShelves(): Promise<CrateShelf[]> {
-  const dash = await crate<CrateDashboard>("/picks/dashboard");
-  const deferred = (dash.crates ?? []).filter((c) => c.deferred).map((c) => c.id);
-  const extra = await Promise.all(
-    deferred.map((id) => crate<CrateDashboard>(`/picks/dashboard?crateId=${encodeURIComponent(id)}`, {}, 8000).catch(() => null))
-  );
-  const merged: CrateDashboard = { ...dash, crates: (dash.crates ?? []).map((c) => {
-    const found = extra.find((e) => e?.crates?.[0]?.id === c.id)?.crates?.[0];
-    return found ?? c;
-  }) };
-  return toShelves(merged);
+  return toShelves(await crate<CrateShelvesResponse>(`/picks/dashboard?shelves=${SHELF_SIZE}`));
 }
 
 // The kitchen speaker is found by name (KITCHEN_DEVICE_NAME, substring match,
