@@ -21,12 +21,14 @@ android {
         // Set these in android/local.properties (not committed):
         //   home.apiBase=https://home.yourdomain.com
         //   home.apiToken=<the "tablet" secret from HOME_API_TOKENS>
+        //   home.nightClock=false   (optional; keeps the home screen up after 8pm, for testing)
         val props = Properties().apply {
             val f = rootProject.file("local.properties")
             if (f.exists()) f.inputStream().use { load(it) }
         }
         buildConfigField("String", "API_BASE", "\"${props.getProperty("home.apiBase", "")}\"")
         buildConfigField("String", "API_TOKEN", "\"${props.getProperty("home.apiToken", "")}\"")
+        buildConfigField("boolean", "NIGHT_CLOCK", props.getProperty("home.nightClock", "true"))
     }
 
     buildTypes {

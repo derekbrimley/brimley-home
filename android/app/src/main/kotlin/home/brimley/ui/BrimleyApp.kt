@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import home.brimley.BuildConfig
 import home.brimley.data.TodayRepository
 import home.brimley.ui.theme.Paper
 import java.time.LocalTime
@@ -68,7 +69,9 @@ fun BrimleyApp(repository: TodayRepository) {
 }
 
 // Bedtime to morning: just a clock. Hours become a setting later; for now 8pm to 6am.
+// home.nightClock=false in local.properties turns it off for testing.
 private fun isNight(): Boolean {
+    if (!BuildConfig.NIGHT_CLOCK) return false
     val h = LocalTime.now().hour
     return h >= 20 || h < 6
 }
