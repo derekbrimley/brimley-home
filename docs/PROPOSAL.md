@@ -234,28 +234,32 @@ reporting; the page is the recommendation.
 ### Zo integration
 
 Zo recommended a background script rather than an AI automation for a fixed POST, so
-the lunch job becomes: the existing automation writes the week's menu to a JSON file,
-and a small looping script POSTs it Monday at 6:00 am (the shape of Zo's existing
-`finance-sync` job). The backend keeps the last payload; if a Monday POST fails, the
-card still shows last week's menu with a "may be out of date" line. The request:
+the lunch job becomes: the existing automation (which reads the district's image-only
+menu PDF) writes the week's menu to `lunch.json`, and a small looping script POSTs it
+Monday morning (the shape of Zo's existing `finance-sync` job):
 
 ```sh
-curl -X POST https://home.brimley.../api/cards \
+curl -fsS -X POST https://home.brimley.../api/cards/lunch \
   -H "Authorization: Bearer $BRIMLEY_HOME_TOKEN" \
   -H "Content-Type: application/json" \
-  --data @/path/to/lunch-menu.json
+  --data @/path/to/lunch.json
 ```
 
 with a body like
 
 ```json
-{ "kind": "lunch_menu", "title": "School lunch this week",
-  "show_from": "2026-10-12T06:00", "show_until": "2026-10-12T12:00",
-  "data": { "days": [ { "day": "Mon", "menu": "Cheese pizza" }, … ] } }
+{ "week_of": "2026-10-12",
+  "days": [ { "date": "2026-10-12", "menu": "Breakfast for Lunch" }, … ] }
 ```
 
+The backend builds the `lunch_menu` card itself: it shows only on that Monday, a
+resend for the same week replaces it, and a bad payload is a 400. If the POST fails,
+nothing is shown; the footer keeps its usual "Tomorrow" line, and the rest of the week
+the footer is free for other day cards.
+
 The card is read-only on the tablet; the footer shows the five days with today lifted
-out. Sylvie reads it and decides; nothing is recorded.
+out, so Sylvie can see her lunch options without anyone looking them up. Nothing is
+recorded.
 
 ## Database (Supabase)
 
@@ -275,7 +279,7 @@ RLS on, service role from the API, as in Crate.
 ## Build status (October 2026)
 
 - Backend: `/api/today`, jobs, bounties, cards, notes, daily sync, sheet parsing,
-  calendar, weather, catalog resolution. Typechecks; 30 unit tests pass.
+  calendar, weather, catalog resolution. Typechecks; unit tests pass.
 - Tablet: app shell, Woodcut/Fredoka theme, home screen (four cards, band, footer),
   all-done stamp and star burst, Watch picker with confirmation, stylus note screen,
   night clock, boot receiver, kiosk flags. Builds a debug APK; not yet run on the
@@ -283,6 +287,8 @@ RLS on, service role from the API, as in Crate.
 - Music (milestone 3): Crate has household tokens (read + play, created from its
   profile menu). The dashboard's `/api/music` proxies Crate's crates and starts
   albums on the kitchen speaker; the Playing card has pause, next and previous.
+- Lunch (milestone 4): `POST /api/cards/lunch` takes Zo's weekly JSON; the footer
+  shows the week on Mondays.
 - Not started: sending a title to the TV over the Android TV remote protocol
   (milestone 5), Yoto and Our makes (milestone 6).
 

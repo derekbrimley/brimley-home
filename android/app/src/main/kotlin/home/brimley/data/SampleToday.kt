@@ -1,5 +1,6 @@
 package home.brimley.data
 
+import home.brimley.model.Card
 import home.brimley.model.CatalogItem
 import home.brimley.model.JobsBlock
 import home.brimley.model.MusicItem
@@ -10,6 +11,10 @@ import home.brimley.model.TodayBounty
 import home.brimley.model.TodayEvent
 import home.brimley.model.TodayJob
 import home.brimley.model.Weather
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 
 // The Monday from the mockups. Shown until the app is pointed at a backend,
 // and used by Compose previews.
@@ -56,6 +61,20 @@ object SampleToday {
                 ),
                 doneCount = 2, allDone = false, starsThisWeek = 2,
                 bounty = TodayBounty(row = 2, title = "vacuum the basement", amountCents = 100, status = "open"),
+            )
+        ),
+        cards = listOf(
+            Card(
+                id = 1, kind = "lunch_menu", title = "School lunch", source = "zo",
+                data = buildJsonObject {
+                    put("week_of", "2026-10-12")
+                    putJsonArray("days") {
+                        listOf("Mon" to "Cheese pizza", "Tue" to "Chicken nuggets", "Wed" to "Taco bar",
+                            "Thu" to "Mac & cheese", "Fri" to "Bean burrito").forEach { (day, menu) ->
+                            addJsonObject { put("day", day); put("menu", menu) }
+                        }
+                    }
+                },
             )
         ),
         playing = listOf(Playing(target = "kitchen", title = "Blue", subtitle = "Joni Mitchell · California", isPlaying = true, positionMs = 134_000, durationMs = 228_000)),

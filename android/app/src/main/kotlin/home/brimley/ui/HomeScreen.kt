@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import home.brimley.model.Card
 import home.brimley.model.Today
@@ -112,8 +113,8 @@ private fun Band(today: Today, error: String?) {
     }
 }
 
-// The footer is the day-card slot: the lunch menu when Zo posted one, else the
-// next thing on the calendar.
+// The footer is the day-card slot: the week's lunch menu on Mondays (Zo posts it;
+// the card's window is that Monday), else the next thing on the calendar.
 @Composable
 private fun Footer(today: Today) {
     val lunch = today.cards.firstOrNull { it.kind == "lunch_menu" }
@@ -162,7 +163,7 @@ private fun LunchWeek(card: Card, date: LocalDate) {
                     .padding(horizontal = 10.dp, vertical = 6.dp),
             ) {
                 Text(day.uppercase(), style = MaterialTheme.typography.labelMedium, color = fg)
-                Text(menu, style = MaterialTheme.typography.bodySmall, color = fg, maxLines = 2)
+                Text(menu, style = MaterialTheme.typography.bodySmall, color = fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
     }

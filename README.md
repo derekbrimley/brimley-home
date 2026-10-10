@@ -35,22 +35,33 @@ Routes (all take `Authorization: Bearer <token>` from `HOME_API_TOKENS`):
 | `GET /api/today` | Everything the home screen shows, assembled server-side |
 | `POST /api/jobs/done` | `{ jobId, done }` tick or untick a job for today |
 | `POST /api/jobs/bounty/claim` | `{ row }` "I did it" on a bounty; writes `waiting` into the sheet |
-| `GET/POST /api/cards`, `DELETE /api/cards/:id` | Day cards; Zo posts the lunch menu here |
+| `GET/POST /api/cards`, `DELETE /api/cards/:id` | Day cards |
+| `POST /api/cards/lunch` | `{ week_of, days }` the week's school lunch menu, from Zo |
 | `POST /api/notes` | `{ png }` or `{ text }` from the stylus note screen |
 | `GET /api/music` | Crate's crates with their current picks, as shelves |
 | `POST /api/music/play` | `{ uri }` start an album on the kitchen speaker through Crate |
 | `POST /api/music/control` | `{ action }` resume, pause, next, previous |
 | `GET /api/cron/sync` | Daily: re-read the sheet and re-resolve every title |
 
-The lunch script on Zo:
+The lunch menu on Zo: the automation that reads the district's menu writes `lunch.json`,
+and a background script posts it on Monday morning. The card shows only on that Monday
+(midnight to midnight in `HOME_TZ`); a resend for the same week replaces it, and a bad
+payload is a 400 with the reason, and nothing on the tablet.
 
 ```sh
-curl -X POST "$HOME_URL/api/cards" \
+curl -fsS -X POST "$HOME_URL/api/cards/lunch" \
   -H "Authorization: Bearer $ZO_TOKEN" -H "Content-Type: application/json" \
-  -d '{"kind":"lunch_menu","title":"School lunch","show_from":"2026-10-12T06:00:00-06:00",
-       "show_until":"2026-10-17T00:00:00-06:00",
-       "data":{"days":[{"day":"Mon","menu":"Cheese pizza"},{"day":"Tue","menu":"Chicken nuggets"}]}}'
+  --data @lunch.json
 ```
+
+```json
+{ "week_of": "2026-10-12",
+  "days": [ { "date": "2026-10-12", "menu": "Breakfast for Lunch" },
+            { "date": "2026-10-13", "menu": "Soft Tacos (chicken, taco meat, or pork)" } ] }
+```
+
+`week_of` is the Monday; each `date` is a weekday in that week (1 to 5 of them, so
+holiday weeks are fine); `menu` is the text shown on that day's tile.
 
 ## Tablet app
 
@@ -81,8 +92,9 @@ builds a debug APK. It has not yet been run on a DC-1.
 
 See `docs/PROPOSAL.md` for the plan and the milestones. Done: the app shell with the
 Woodcut look, the home screen, the stylus note, the Watch picker, the backend for
-calendar, weather, jobs, bounties, cards and the sheet-driven catalog, and music
-through Crate (shelves, play on the kitchen speaker, transport). Not yet: sending a
+calendar, weather, jobs, bounties, cards and the sheet-driven catalog, music
+through Crate (shelves, play on the kitchen speaker, transport), and the Monday
+lunch menu from Zo. Not yet: sending a
 title to the TV (milestone 5), Yoto and "Our makes" (milestone 6).
 
 Music setup: in Crate, open the profile menu, Household Tokens, create one named

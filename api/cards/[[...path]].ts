@@ -2,10 +2,12 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { authenticate } from "../../lib/auth";
 import { subPath } from "../../lib/route";
 import { activeCards, validateCardInput } from "../../lib/cards";
-import { deleteCard, getCardRows, insertCard } from "../../lib/queries";
+import { lunchCard, parseLunchWeek } from "../../lib/lunch";
+import { deleteCard, deleteLunchCards, getCardRows, insertCard } from "../../lib/queries";
 
 // GET    /api/cards          active cards
-// POST   /api/cards          add a card (Zo posts the lunch menu here)
+// POST   /api/cards          add a card
+// POST   /api/cards/lunch    the week's school lunch menu, from Zo
 // DELETE /api/cards/:id      remove a card
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const who = authenticate(req.headers.authorization);
@@ -31,6 +33,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       priority: typeof b.priority === "number" ? b.priority : 0,
       source: who,
     });
+    return res.status(201).json({ card });
+  }
+
+  if (req.method === "POST" && path.length === 1 && path[0] === "lunch") {
+    const week = parseLunchWeek(req.body);
+    if ("error" in week) return res.status(400).json({ error: week.error });
+    await deleteLunchCards(week.weekOf);
+    const card = await insertCard({ ...lunchCard(week, process.env.HOME_TZ ?? "America/Denver"), source: who });
     return res.status(201).json({ card });
   }
 

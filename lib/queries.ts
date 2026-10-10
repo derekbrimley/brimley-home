@@ -66,3 +66,9 @@ export async function insertCard(card: Omit<CardRow, "id">): Promise<CardRow> {
 export async function deleteCard(id: number): Promise<void> {
   await supabaseAdmin().from("cards").delete().eq("id", id);
 }
+
+// Drop earlier lunch menus for the same week, so a resend replaces rather than stacks.
+export async function deleteLunchCards(weekOf: string): Promise<void> {
+  const { error } = await supabaseAdmin().from("cards").delete().eq("kind", "lunch_menu").eq("data->>week_of", weekOf);
+  if (error) throw new Error(error.message);
+}
