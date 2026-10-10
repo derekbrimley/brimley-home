@@ -72,6 +72,7 @@ SDK installed). Put the backend address and the tablet token in
 ```
 home.apiBase=https://home.yourdomain.com
 home.apiToken=<the "tablet" secret from HOME_API_TOKENS>
+home.spotifyClientId=<the Spotify developer app's client ID>   (optional)
 ```
 
 Without those the app runs on sample data (the Monday from the mockups), which is
@@ -85,18 +86,36 @@ set it as device owner over adb before adding any Google account to the tablet:
 adb shell dpm set-device-owner home.brimley/.DeviceAdmin
 ```
 
-Build status: the backend typechecks and its tests pass; `./gradlew assembleDebug`
-builds a debug APK. It has not yet been run on a DC-1.
+### The TV
+
+The tablet talks to the Chromecast with Google TV directly over Wi-Fi (the
+Android TV remote protocol, the same one the Google TV phone app uses). First
+time: tap a poster on Watch → Play, or "TV not set up" on the Playing card. A
+six-character code appears on the TV; tap it in. That's the only pairing; it
+repeats only if the TV is reset. Debug builds have a "TV test" button on the
+Watch tab that sends each title's link to the TV.
+
+### Music and podcasts on the tablet
+
+Albums play through Spotify on the DC-1 (`KITCHEN_DEVICE_NAME=DC-1` in Vercel),
+so they come out of the tablet or the Bluetooth speaker it's paired with. The
+Spotify app drops off Spotify's device list when idle; with
+`home.spotifyClientId` set (a Spotify developer app with package `home.brimley`
+and the APK's signing SHA1, redirect `brimley-home://spotify-callback`), the
+dashboard wakes it first. Podcasts on the Listen shelf play on the tablet too.
+
+Build status: the backend typechecks and its tests pass; `./gradlew testDebugUnitTest
+assembleDebug` (JDK 17) runs the tablet's unit tests and builds a debug APK.
 
 ## Where things stand
 
 See `docs/PROPOSAL.md` for the plan and the milestones. Done: the app shell with the
 Woodcut look, the home screen, the stylus note, the Watch picker, the backend for
 calendar, weather, jobs, bounties, cards and the sheet-driven catalog, music
-through Crate (shelves, play on the kitchen speaker, transport), and the Monday
-lunch menu from Zo. Not yet: sending a
-title to the TV (milestone 5), Yoto and "Our makes" (milestone 6).
+through Crate (shelves, play on the tablet, transport), the Monday lunch menu from
+Zo, titles on the TV, and podcasts on the tablet. Not yet: Yoto and "Our makes"
+(milestone 6).
 
 Music setup: in Crate, open the profile menu, Household Tokens, create one named
 "Kitchen tablet", and put it in `CRATE_TOKEN`. Set `CRATE_API_URL` to Crate's address
-and `KITCHEN_DEVICE_NAME` to part of the kitchen speaker's name in Spotify.
+and `KITCHEN_DEVICE_NAME` to part of the tablet's name in Spotify (`DC-1`).

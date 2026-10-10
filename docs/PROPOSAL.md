@@ -159,45 +159,14 @@ the physical remote stays in a drawer, and the dashboard deep-links straight int
 title so the Google TV home screen is never the path. Google TV's "Apps only mode"
 hides recommendations if the home screen does appear; a kids profile limits what the
 apps offer. Known gap: when an episode ends, the service's app is on screen with its
-own rows. The Playing card has a "TV off" action, and a "stop after this" toggle at
-start time sends it automatically when the runtime is up.
+own rows. The Playing card has a "TV off" action.
 
-With the Google TV box the tablet uses the Android TV remote protocol (below, option
-A). The rest of this section is kept for the dongle case.
-
-The dongle Chromecast only runs Cast receiver apps. The tablet
-has Play services, so it uses the official **Google Cast SDK for Android** as a
-sender. That covers:
-
-- **YouTube:** the YouTube Cast receiver, queued the way Home Assistant's YouTube
-  controller does it (receiver app id plus the lounge/queue call). Curated videos
-  only; the catalog holds video ids.
-- **Podcasts:** the episode's audio URL from the show's RSS feed, loaded into the
-  Cast default media receiver. No Pocket Casts account needed. The same episode can
-  play on the tablet's own speaker instead.
-- **Remote:** play, pause, seek, volume and stop for anything the tablet started.
-
-**Disney+, Max and Netflix cannot be started on a specific title** from anything but
-their own apps; their receivers only accept playback from an authenticated sender.
-Two ways around it, to be chosen:
-
-- **Option A, swap the dongle** for a Google TV Streamer (or Chromecast with Google
-  TV). Those speak the Android TV remote protocol v2 on the home network: pair once
-  with a PIN, then a TLS connection with protobuf messages (the Python
-  `androidtvremote2` library is a complete reference). The tablet can then launch a
-  deep link on any installed app (`https://www.disneyplus.com/video/…`,
-  `https://play.max.com/video/watch/…`, `https://www.youtube.com/watch?v=…`) and send
-  play/pause, volume, back and home. Deep-link formats are undocumented and have
-  broken briefly after Google updates; ADB over network is the fallback. This is the
-  only path where "tap Kiki, it plays" works end to end for the paid services.
-- **Option B, keep the dongle.** Install Disney+, Max and Netflix on the DC-1.
-  Tapping a Shows or Movies poster opens that app on the tablet at the title (their
-  Android apps accept the web links as intents), and the kid taps the app's own Cast
-  button once. Two taps, the service's app is briefly on screen, curation is softer.
-  YouTube and podcasts still go straight to the TV.
-
-The catalog schema is the same either way: `kind`, `service`, `deep_link` (or
-`youtube_id` / `rss_url` + episode guid), `tmdb_id`.
+The tablet uses the Android TV remote protocol v2 (the Python `androidtvremote2`
+library is the reference): paired once with an on-screen code, then a TLS connection
+that opens deep links (`https://www.disneyplus.com/…`, `https://play.max.com/…`,
+`https://www.youtube.com/watch?v=…`) and sends power, play/pause and volume. Deep-link
+formats are undocumented and have broken briefly after Google updates. Podcasts play on
+the tablet, not the TV. No timers for now: the Playing card has a "TV off" button.
 
 **Keeping the catalog honest:** a weekly job looks up each movie or show's streaming
 availability through TMDB's watch-provider data (JustWatch-sourced, free API key),
@@ -289,8 +258,9 @@ RLS on, service role from the API, as in Crate.
   albums on the kitchen speaker; the Playing card has pause, next and previous.
 - Lunch (milestone 4): `POST /api/cards/lunch` takes Zo's weekly JSON; the footer
   shows the week on Mondays.
-- Not started: sending a title to the TV over the Android TV remote protocol
-  (milestone 5), Yoto and Our makes (milestone 6).
+- Watch (milestone 5): titles start on the Google TV over the Android TV remote
+  protocol; podcasts and music play on the tablet.
+- Not started: Yoto and Our makes (milestone 6).
 
 ## Build order
 
@@ -304,6 +274,5 @@ RLS on, service role from the API, as in Crate.
 
 ## Open questions
 
-- Confirm the Google TV box goes back on the TV.
 - Round 3 layout sign-off, then the build starts with the app shell.
 - One Jobs card with names, or one card per child?
