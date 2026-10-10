@@ -9,11 +9,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import home.brimley.BuildConfig
 import home.brimley.data.TodayRepository
+import home.brimley.audio.PodcastFeeds
+import home.brimley.audio.PodcastPlayer
 import home.brimley.tv.TvController
+import home.brimley.tv.TvState
+import kotlinx.coroutines.launch
 import home.brimley.ui.theme.Paper
 import java.time.LocalTime
 
@@ -26,9 +31,21 @@ sealed interface Screen {
 }
 
 @Composable
-fun BrimleyApp(repository: TodayRepository, tv: TvController) {
+fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastPlayer, feeds: PodcastFeeds) {
     val state by repository.state.collectAsState()
     var screen by remember { mutableStateOf<Screen>(Screen.Home) }
+    val tvState by tv.state.collectAsState()
+    val podcast by podcasts.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    val onControl: (String, String) -> Unit = { target, action ->
+        when (target) {
+            "kitchen" -> repository.controlMusic(action)
+            "podcast" -> when (action) { "back" -> podcasts.seekBy(-30_000); "forward" -> podcasts.seekBy(30_000); else -> podcasts.toggle() }
+            "tv" -> scope.launch {
+                when (action) { "playpause" -> tv.playPause(); "volup" -> tv.volumeUp(); "voldown" -> tv.volumeDown(); "off" -> tv.powerOff() }
+            }
+        }
+    }
 
     DisposableEffect(repository) {
         repository.start()
@@ -52,7 +69,10 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController) {
                         onClaimBounty = repository::claimBounty,
                         onPlaySomething = { screen = Screen.Play(PlayTab.Watch) },
                         onDrawNote = { screen = Screen.Note },
-                        onControl = repository::controlMusic,
+                        playing = mergePlaying(today.playing, tvState, podcast),
+                        tvSetUp = tvState != TvState.NotPaired,
+                        onControl = onControl,
+                        onSetUpTv = { screen = Screen.TvPair },
                     )
                 }
             }
@@ -60,6 +80,8 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController) {
                 today = state.today,
                 repository = repository,
                 tv = tv,
+                podcasts = podcasts,
+                feeds = feeds,
                 onSetUpTv = { screen = Screen.TvPair },
                 onTvDebug = { screen = Screen.TvDebug },
                 initialTab = s.tab,

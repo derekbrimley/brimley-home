@@ -37,14 +37,21 @@ import home.brimley.ui.theme.Rules
 import home.brimley.ui.theme.TileShape
 
 @Composable
-fun PlayingCard(playing: List<Playing>, onPlaySomething: () -> Unit, onControl: (String) -> Unit, modifier: Modifier = Modifier) {
+fun PlayingCard(
+    playing: List<Playing>,
+    tvSetUp: Boolean,
+    onPlaySomething: () -> Unit,
+    onControl: (target: String, action: String) -> Unit,
+    onSetUpTv: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     InkCard(modifier) {
         val where = listOf(
-            playing.firstOrNull { it.target == "kitchen" }?.let { "kitchen speaker" } ?: "kitchen quiet",
-            playing.firstOrNull { it.target == "tv" }?.let { "TV on" } ?: "TV off",
+            if (playing.any { it.target == "kitchen" || it.target == "podcast" }) "kitchen speaker" else "kitchen quiet",
+            when { !tvSetUp -> "TV not set up"; playing.any { it.target == "tv" } -> "TV on"; else -> "TV off" },
             playing.firstOrNull { it.target == "yoto" }?.let { "Yoto playing" } ?: "Yoto quiet",
         ).joinToString(" · ")
-        CardTitle("Playing", trailing = where)
+        Box(Modifier.clickable(enabled = !tvSetUp, onClick = onSetUpTv)) { CardTitle("Playing", trailing = where) }
         Spacer(Modifier.height(12.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             when (playing.size) {
@@ -59,19 +66,45 @@ fun PlayingCard(playing: List<Playing>, onPlaySomething: () -> Unit, onControl: 
 }
 
 @Composable
-private fun Transport(isPlaying: Boolean, onControl: (String) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        TransportButton(filled = false, onClick = { onControl("previous") }) { PrevIcon(it) }
-        TransportButton(filled = true, onClick = { onControl(if (isPlaying) "pause" else "resume") }) { if (isPlaying) PauseIcon(it) else PlayIcon(it) }
-        TransportButton(filled = false, onClick = { onControl("next") }) { NextIcon(it) }
+private fun Controls(p: Playing, onControl: (String, String) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        when (p.target) {
+            "kitchen" -> {
+                RoundButton(filled = false, onClick = { onControl("kitchen", "previous") }) { PrevIcon(it) }
+                RoundButton(filled = true, onClick = { onControl("kitchen", if (p.isPlaying) "pause" else "resume") }) { if (p.isPlaying) PauseIcon(it) else PlayIcon(it) }
+                RoundButton(filled = false, onClick = { onControl("kitchen", "next") }) { NextIcon(it) }
+            }
+            "podcast" -> {
+                RoundButton(filled = false, onClick = { onControl("podcast", "back") }) { Label("−30", it) }
+                RoundButton(filled = true, onClick = { onControl("podcast", if (p.isPlaying) "pause" else "resume") }) { if (p.isPlaying) PauseIcon(it) else PlayIcon(it) }
+                RoundButton(filled = false, onClick = { onControl("podcast", "forward") }) { Label("+30", it) }
+            }
+            "tv" -> {
+                RoundButton(filled = true, onClick = { onControl("tv", "playpause") }) { PlayPauseIcon(it) }
+                RoundButton(filled = false, onClick = { onControl("tv", "voldown") }) { Label("−", it) }
+                RoundButton(filled = false, onClick = { onControl("tv", "volup") }) { Label("+", it) }
+                InkButton("TV off", onClick = { onControl("tv", "off") }, filled = false, modifier = Modifier.height(64.dp))
+            }
+        }
     }
 }
 
 @Composable
-private fun TransportButton(filled: Boolean, onClick: () -> Unit, icon: @Composable (androidx.compose.ui.graphics.Color) -> Unit) {
+private fun Label(text: String, c: androidx.compose.ui.graphics.Color) = Text(text, style = MaterialTheme.typography.labelLarge, color = c)
+
+@Composable
+private fun PlayPauseIcon(c: androidx.compose.ui.graphics.Color) = Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+    androidx.compose.foundation.Canvas(Modifier.size(14.dp)) {
+        drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(0f, 0f); lineTo(size.width, size.height / 2f); lineTo(0f, size.height); close() }, c)
+    }
+    PauseIcon(c)
+}
+
+@Composable
+private fun RoundButton(filled: Boolean, onClick: () -> Unit, icon: @Composable (androidx.compose.ui.graphics.Color) -> Unit) {
     Box(
         Modifier
-            .size(56.dp)
+            .size(64.dp)
             .clip(androidx.compose.foundation.shape.CircleShape)
             .background(if (filled) Ink else home.brimley.ui.theme.Paper)
             .border(BorderStroke(Rules.thin, Ink), androidx.compose.foundation.shape.CircleShape)
@@ -119,7 +152,7 @@ private fun NothingPlaying() {
 }
 
 @Composable
-private fun NowPlaying(p: Playing, big: Boolean, onControl: (String) -> Unit) {
+private fun NowPlaying(p: Playing, big: Boolean, onControl: (String, String) -> Unit) {
     val coverSize = if (big) 150.dp else 84.dp
     Row(verticalAlignment = Alignment.Top) {
         Box(
@@ -143,12 +176,12 @@ private fun NowPlaying(p: Playing, big: Boolean, onControl: (String) -> Unit) {
             p.subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis) }
             Spacer(Modifier.height(8.dp))
             Pill(
-                when (p.target) { "kitchen" -> "Kitchen speaker"; "tv" -> "Living room TV"; else -> "Yoto" },
+                when (p.target) { "kitchen", "podcast" -> "Kitchen speaker"; "tv" -> "Living room TV"; else -> "Yoto" },
                 filled = false,
             )
-            if (p.target == "kitchen") {
+            if (p.target != "yoto") {
                 Spacer(Modifier.height(10.dp))
-                Transport(isPlaying = p.isPlaying, onControl = onControl)
+                Controls(p, onControl)
             }
         }
     }

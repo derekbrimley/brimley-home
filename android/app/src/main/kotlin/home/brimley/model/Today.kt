@@ -61,6 +61,7 @@ data class Card(
     val source: String = "",
 )
 
+// target: "kitchen" | "tv" | "yoto" from the server; "podcast" is added on the tablet (ui/MergePlaying.kt).
 @Serializable
 data class Playing(
     val target: String,

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import home.brimley.model.Card
+import home.brimley.model.Playing
 import home.brimley.model.Today
 import home.brimley.model.TodayJob
 import home.brimley.ui.cards.JobsCard
@@ -49,7 +50,10 @@ fun HomeScreen(
     onClaimBounty: (Int) -> Unit,
     onPlaySomething: () -> Unit,
     onDrawNote: () -> Unit,
-    onControl: (String) -> Unit,
+    playing: List<Playing>,
+    tvSetUp: Boolean,
+    onControl: (String, String) -> Unit,
+    onSetUpTv: () -> Unit,
 ) {
     Column(Modifier.fillMaxSize().background(Paper)) {
         Band(today, error)
@@ -68,7 +72,7 @@ fun HomeScreen(
                 )
             }
             Column(Modifier.weight(1.4f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                PlayingCard(today.playing, onPlaySomething, onControl, Modifier.weight(1.05f).fillMaxWidth())
+                PlayingCard(playing, tvSetUp, onPlaySomething, onControl, onSetUpTv, Modifier.weight(1.05f).fillMaxWidth())
                 NoteCard(today.cards, onDrawNote, Modifier.weight(1f).fillMaxWidth())
             }
         }

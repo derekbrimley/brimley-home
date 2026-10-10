@@ -1,6 +1,8 @@
 package home.brimley
 
 import android.app.Application
+import home.brimley.audio.PodcastFeeds
+import home.brimley.audio.PodcastPlayer
 import home.brimley.data.HomeApi
 import home.brimley.data.TodayRepository
 import home.brimley.tv.AtvConnector
@@ -19,10 +21,14 @@ class BrimleyApplication : Application() {
         private set
     lateinit var tv: TvController
         private set
+    lateinit var podcasts: PodcastPlayer
+        private set
+    val feeds = PodcastFeeds()
 
     override fun onCreate() {
         super.onCreate()
         repository = TodayRepository(HomeApi(BuildConfig.API_BASE, BuildConfig.API_TOKEN), cacheDir)
+        podcasts = PodcastPlayer(this)
         tv = TvController(PrefsTvStore(this), AtvConnector(TvIdentity(), scope), NsdDiscovery(this), scope).also { it.start() }
     }
 }

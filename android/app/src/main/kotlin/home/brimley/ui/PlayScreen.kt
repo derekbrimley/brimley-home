@@ -38,7 +38,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import home.brimley.BuildConfig
 import home.brimley.data.TodayRepository
+import androidx.compose.foundation.layout.heightIn
+import home.brimley.audio.Episode
+import home.brimley.audio.FeedReader
+import home.brimley.audio.Podcast
+import home.brimley.audio.PodcastFeeds
+import home.brimley.audio.PodcastPlayer
+import home.brimley.tv.StartedTitle
 import home.brimley.tv.TvController
+import home.brimley.tv.TvNotPaired
+import home.brimley.tv.TvState
 import home.brimley.model.CatalogItem
 import home.brimley.model.MusicItem
 import home.brimley.model.MusicShelf
@@ -56,13 +65,14 @@ enum class PlayTab(val label: String, val where: String) {
     Stories("Stories", "Stories go to the Yoto, or play here"),
 }
 
-// One picker, three tabs. Music and Stories fill in with milestones 3 and 6;
-// Watch shows the catalog now and the TV connection lands in milestone 5.
+// One picker, three tabs. Music goes to Spotify on the tablet, Watch to the TV, Listen plays here; Stories fill in with milestone 6.
 @Composable
 fun PlayScreen(
     today: Today?,
     repository: TodayRepository,
     tv: TvController,
+    podcasts: PodcastPlayer,
+    feeds: PodcastFeeds,
     onSetUpTv: () -> Unit,
     onTvDebug: () -> Unit,
     initialTab: PlayTab,
@@ -70,6 +80,8 @@ fun PlayScreen(
 ) {
     var tab by remember { mutableStateOf(initialTab) }
     var pending by remember { mutableStateOf<CatalogItem?>(null) }
+    var tvStatus by remember { mutableStateOf<String?>(null) }
+    var starting by remember { mutableStateOf(false) }
     var shelves by remember { mutableStateOf<List<MusicShelf>?>(null) }
     var musicError by remember { mutableStateOf<String?>(null) }
     var musicNotice by remember { mutableStateOf<String?>(null) }
@@ -113,7 +125,7 @@ fun PlayScreen(
 
         Box(Modifier.fillMaxSize()) {
             when (tab) {
-                PlayTab.Watch -> WatchShelves(today?.catalog.orEmpty(), onPick = { pending = it })
+                PlayTab.Watch -> WatchShelves(today?.catalog.orEmpty().filter { !it.link.isNullOrBlank() }, onPick = { pending = it; tvStatus = null })
                 PlayTab.Music -> MusicShelves(
                     shelves = shelves,
                     error = musicError,
@@ -130,7 +142,25 @@ fun PlayScreen(
                 PlayTab.Stories -> ComingSoon("Yoto cards arrive in milestone 6.")
             }
             pending?.let { item ->
-                ConfirmPlay(item, onCancel = { pending = null }, onPlay = { pending = null /* milestone 5: send to the TV */ })
+                if (item.shelf == "listen") {
+                    EpisodeSheet(item, feeds, onCancel = { pending = null }, onPlay = { podcast, episode ->
+                        podcasts.play(podcast, episode, item.posterUrl)
+                        pending = null
+                        onHome()
+                    })
+                } else {
+                    ConfirmPlay(item, status = tvStatus, busy = starting, onCancel = { pending = null }, onPlay = {
+                        if (tv.state.value == TvState.NotPaired) { pending = null; onSetUpTv(); return@ConfirmPlay }
+                        starting = true
+                        tvStatus = "Starting on the TV…"
+                        scope.launch {
+                            tv.play(item.link!!, StartedTitle(item.title, item.serviceLabel, item.posterUrl))
+                                .onSuccess { pending = null; onHome() }
+                                .onFailure { tvStatus = if (it is TvNotPaired) "The TV isn't set up yet" else it.message ?: "Couldn't reach the TV" }
+                            starting = false
+                        }
+                    })
+                }
             }
         }
     }
@@ -245,26 +275,60 @@ private fun Poster(item: CatalogItem, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ConfirmPlay(item: CatalogItem, onCancel: () -> Unit, onPlay: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(Ink.copy(alpha = 0.18f)).clickable(onClick = onCancel), contentAlignment = Alignment.Center) {
+private fun Sheet(onDismiss: () -> Unit, width: androidx.compose.ui.unit.Dp = 520.dp, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    Box(Modifier.fillMaxSize().background(Ink.copy(alpha = 0.18f)).clickable(onClick = onDismiss), contentAlignment = Alignment.Center) {
         Column(
             Modifier
-                .width(520.dp)
+                .width(width)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Paper)
                 .border(BorderStroke(8.dp, Ink), RoundedCornerShape(24.dp))
                 .clickable(enabled = false) {}
                 .padding(28.dp),
-        ) {
-            Text(item.title, style = MaterialTheme.typography.headlineMedium, color = Ink)
-            val facts = listOfNotNull(item.serviceLabel, item.runtimeMinutes?.let { "${it / 60}h ${it % 60}m" })
-            Text(facts.joinToString(" · ") + " · Play on the living room TV?", style = MaterialTheme.typography.bodyMedium, color = Ink, modifier = Modifier.padding(top = 6.dp))
-            Spacer(Modifier.height(22.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                InkButton("Not now", onClick = onCancel, filled = false, modifier = Modifier.weight(1f))
-                InkButton("Play", onClick = onPlay, modifier = Modifier.weight(1f))
+            content = content,
+        )
+    }
+}
+
+@Composable
+private fun ConfirmPlay(item: CatalogItem, status: String?, busy: Boolean, onCancel: () -> Unit, onPlay: () -> Unit) {
+    Sheet(onCancel) {
+        Text(item.title, style = MaterialTheme.typography.headlineMedium, color = Ink)
+        val facts = listOfNotNull(item.serviceLabel, item.runtimeMinutes?.let { "${it / 60}h ${it % 60}m" })
+        Text(facts.joinToString(" · ") + " · Play on the living room TV?", style = MaterialTheme.typography.bodyMedium, color = Ink, modifier = Modifier.padding(top = 6.dp))
+        status?.let { Text(it, style = MaterialTheme.typography.titleMedium, color = Ink, modifier = Modifier.padding(top = 14.dp)) }
+        Spacer(Modifier.height(22.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            InkButton("Not now", onClick = onCancel, filled = false, modifier = Modifier.weight(1f))
+            InkButton(if (status != null && !busy) "Try again" else "Play", onClick = { if (!busy) onPlay() }, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun EpisodeSheet(item: CatalogItem, feeds: PodcastFeeds, onCancel: () -> Unit, onPlay: (Podcast, Episode) -> Unit) {
+    var podcast by remember(item.link) { mutableStateOf<Podcast?>(null) }
+    var failed by remember(item.link) { mutableStateOf(false) }
+    LaunchedEffect(item.link) { feeds.load(item.link!!).onSuccess { podcast = it }.onFailure { failed = true } }
+    Sheet(onCancel, width = 680.dp) {
+        Text(item.title, style = MaterialTheme.typography.headlineMedium, color = Ink)
+        Text("Plays here in the kitchen", style = MaterialTheme.typography.bodyMedium, color = Ink, modifier = Modifier.padding(top = 6.dp, bottom = 12.dp))
+        val p = podcast
+        when {
+            failed -> Text("Couldn't load the episodes", style = MaterialTheme.typography.titleMedium, color = Ink)
+            p == null -> Text("Finding the newest episodes…", style = MaterialTheme.typography.titleMedium, color = Ink)
+            p.episodes.isEmpty() -> Text("No episodes to play", style = MaterialTheme.typography.titleMedium, color = Ink)
+            else -> p.episodes.forEach { ep ->
+                Column(Modifier.fillMaxWidth().heightIn(min = 72.dp).clickable { onPlay(p, ep) }.padding(vertical = 10.dp)) {
+                    Text(ep.title, style = MaterialTheme.typography.titleMedium, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    val facts = listOfNotNull(FeedReader.formatDate(ep.published), FeedReader.formatDuration(ep.durationSeconds))
+                    if (facts.isNotEmpty()) Text(facts.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = Ink)
+                }
+                HorizontalDivider(thickness = 3.dp, color = Ink)
             }
         }
+        Spacer(Modifier.height(18.dp))
+        InkButton("Not now", onClick = onCancel, filled = false, modifier = Modifier.fillMaxWidth())
     }
 }
 
