@@ -106,6 +106,16 @@ No new card; the band and footer do not change.
 - PROPOSAL: drop the dongle/Cast and option B text; mark step 5 done; record "no
   timers for now".
 
+## 5. Music: waking Spotify on the tablet (added after review)
+
+Albums play through Spotify on the DC-1, which drops off Spotify's device list when
+idle, so Crate's play call fails with "isn't on". The tablet connects to its own
+Spotify app with the Spotify App Remote SDK before playing (that starts it in the
+background), then calls Crate as now, retrying while the device reappears. Setup: a
+Spotify developer app with package `home.brimley`, the APK's signing SHA1 and redirect
+`brimley-home://spotify-callback`; its client ID goes in `local.properties`. The
+backend's "isn't on" error also names the devices Spotify can see.
+
 ## Testing
 
 - JVM unit tests in `android/app/src/test`: protobuf round trips against byte fixtures
