@@ -28,7 +28,7 @@ data class HomeState(
 // One source of truth for the screen. Polls /api/today every minute, keeps the
 // last good payload on disk so a reboot never shows a blank dashboard, and
 // applies job ticks optimistically so the checkbox never lags the finger.
-class TodayRepository(private val api: HomeApi, cacheDir: File) {
+class TodayRepository(private val api: HomeApi, cacheDir: File, private val waker: SpotifyWaker? = null) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val cacheFile = File(cacheDir, "today.json")
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
@@ -103,10 +103,13 @@ class TodayRepository(private val api: HomeApi, cacheDir: File) {
     suspend fun musicShelves(): Result<List<MusicShelf>> =
         if (!api.isConfigured) Result.success(SampleToday.shelves()) else runCatching { api.musicShelves() }
 
-    // Start an album on the kitchen speaker. The Playing card updates on the
-    // next refresh; the picker shows the error text if the speaker is off.
-    suspend fun playMusic(uri: String): Result<Unit> =
-        runCatching { api.playMusic(uri); refresh() }
+    // Start an album on Spotify on the tablet. Wakes the Spotify app first (it
+    // drops off the device list when idle) and retries while it reappears.
+    suspend fun playMusic(uri: String): Result<Unit> = runCatching {
+        waker?.wake()
+        retryWhileSpeakerOff { api.playMusic(uri) }
+        refresh()
+    }
 
     fun controlMusic(action: String) {
         val today = _state.value.today ?: return

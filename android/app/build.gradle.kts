@@ -22,6 +22,7 @@ android {
         //   home.apiBase=https://home.yourdomain.com
         //   home.apiToken=<the "tablet" secret from HOME_API_TOKENS>
         //   home.nightClock=false   (optional; keeps the home screen up after 8pm, for testing)
+        //   home.spotifyClientId=<Spotify app client ID>  (optional; wakes Spotify before an album)
         val props = Properties().apply {
             val f = rootProject.file("local.properties")
             if (f.exists()) f.inputStream().use { load(it) }
@@ -29,6 +30,7 @@ android {
         buildConfigField("String", "API_BASE", "\"${props.getProperty("home.apiBase", "")}\"")
         buildConfigField("String", "API_TOKEN", "\"${props.getProperty("home.apiToken", "")}\"")
         buildConfigField("boolean", "NIGHT_CLOCK", props.getProperty("home.nightClock", "true"))
+        buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"${props.getProperty("home.spotifyClientId", "")}\"")
     }
 
     buildTypes {
@@ -67,6 +69,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.coil.compose)
     implementation(libs.androidx.media3.exoplayer)
+    implementation(files("libs/spotify-app-remote-release-0.8.0.aar"))
+    implementation(libs.gson)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
