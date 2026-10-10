@@ -112,10 +112,17 @@ export function pickDevice(devices: CrateDevice[], wantedName: string | undefine
   return real.find((d) => d.is_active) ?? (real.length === 1 ? real[0] : null);
 }
 
+// Names what Spotify can see, so "isn't on" explains itself (an idle phone
+// app drops off the list; a different account never shows up).
+export function noDeviceMessage(devices: CrateDevice[]): string {
+  const names = devices.filter((d) => !/web player/i.test(d.name)).map((d) => d.name);
+  return `The kitchen speaker isn't on (${names.length ? `Spotify sees: ${names.join(", ")}` : "Spotify sees no devices"})`;
+}
+
 export async function playOnKitchen(uri: string, source = "kitchen"): Promise<{ device: string }> {
   const { devices } = await crate<{ devices: CrateDevice[] }>("/spotify/devices");
   const device = pickDevice(devices, process.env.KITCHEN_DEVICE_NAME);
-  if (!device) throw new Error("The kitchen speaker isn't on");
+  if (!device) throw new Error(noDeviceMessage(devices));
   await crate<void>("/spotify/play", { method: "PUT", body: JSON.stringify({ spotify_uri: uri, device_id: device.id, source }) }, 12000);
   return { device: device.name };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pickDevice, toPlaying, toShelves } from "./crate";
+import { noDeviceMessage, pickDevice, toPlaying, toShelves } from "./crate";
 
 describe("toPlaying", () => {
   it("prefers the album over the track for the title", () => {
@@ -42,5 +42,18 @@ describe("pickDevice", () => {
   });
   it("falls back to the active real device", () => {
     expect(pickDevice([devices[1], { ...devices[2], is_active: true }], "garage")?.id).toBe("p");
+  });
+});
+
+describe("noDeviceMessage", () => {
+  it("lists the devices Spotify can see, minus web players", () => {
+    expect(noDeviceMessage([
+      { id: "1", name: "Derek's iPhone", type: "Smartphone", is_active: false },
+      { id: "2", name: "Web Player (Chrome)", type: "Computer", is_active: false },
+      { id: "3", name: "Living Room", type: "Speaker", is_active: false },
+    ])).toBe("The kitchen speaker isn't on (Spotify sees: Derek's iPhone, Living Room)");
+  });
+  it("says so when Spotify sees nothing", () => {
+    expect(noDeviceMessage([])).toBe("The kitchen speaker isn't on (Spotify sees no devices)");
   });
 });
