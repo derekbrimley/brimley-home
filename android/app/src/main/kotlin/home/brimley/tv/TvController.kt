@@ -74,7 +74,9 @@ class TvController(
         store.host?.let { host -> tryConnect(host, pin)?.let { return it } }
         val found = discovery.find(DISCOVERY_MS) ?: return null
         if (found == store.host) return null
-        return tryConnect(found, pin)?.also { store.host = found }
+        // A different certificate here is some other Android TV, not ours moved.
+        val s = try { tryConnect(found, pin) } catch (e: TvCertificateChanged) { null }
+        return s?.also { store.host = found }
     }
 
     private suspend fun tryConnect(host: String, pin: String): TvSession? = try {
@@ -104,7 +106,10 @@ class TvController(
         if (store.serverCertSha256 == null) return Result.failure(TvNotPaired())
         val s = liveSession() ?: return Result.failure(IOException("Couldn't reach the TV"))
         return runCatching {
-            if (s.status.value.poweredOn != true) {
+            // A fresh session doesn't know yet; power is a toggle, so wait for
+            // the TV to say before sending it, and only send it on a clear "off".
+            val power = withTimeoutOrNull(POWER_STATE_MS) { s.status.first { it.poweredOn != null } }?.poweredOn
+            if (power == false) {
                 s.send(RemoteMessages.key(KeyCode.POWER))
                 withTimeoutOrNull(POWER_ON_MS) { s.status.first { it.poweredOn == true } }
                     ?: throw IOException("The TV didn't turn on")
@@ -115,14 +120,19 @@ class TvController(
         }
     }
 
-    suspend fun playPause() { session.value?.send(RemoteMessages.key(KeyCode.MEDIA_PLAY_PAUSE)) }
-    suspend fun volumeUp() { session.value?.send(RemoteMessages.key(KeyCode.VOLUME_UP)) }
-    suspend fun volumeDown() { session.value?.send(RemoteMessages.key(KeyCode.VOLUME_DOWN)) }
+    // Buttons on the Playing card: a dropped connection just means nothing happens.
+    suspend fun playPause() = key(KeyCode.MEDIA_PLAY_PAUSE)
+    suspend fun volumeUp() = key(KeyCode.VOLUME_UP)
+    suspend fun volumeDown() = key(KeyCode.VOLUME_DOWN)
 
     // Power is a toggle, so only send it when the TV says it is on.
     suspend fun powerOff() {
+        if (session.value?.status?.value?.poweredOn == true) key(KeyCode.POWER)
+    }
+
+    private suspend fun key(code: Int) {
         val s = session.value ?: return
-        if (s.status.value.poweredOn == true) s.send(RemoteMessages.key(KeyCode.POWER))
+        try { s.send(RemoteMessages.key(code)) } catch (_: IOException) { s.close() }
     }
 
     suspend fun beginPairing(): Result<PairingSession> = runCatching {
@@ -146,7 +156,8 @@ class TvController(
     private companion object {
         val BACKOFF_MS = longArrayOf(1_000, 2_000, 5_000, 10_000, 30_000)
         const val DISCOVERY_MS = 6_000L
-        const val RECONNECT_MS = 8_000L
+        const val RECONNECT_MS = 16_000L   // a dead cached address (5 s) + discovery (6 s) + connect
+        const val POWER_STATE_MS = 3_000L
         const val POWER_ON_MS = 8_000L
     }
 }

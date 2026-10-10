@@ -3,6 +3,8 @@ package home.brimley.tv
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -15,8 +17,10 @@ private class FakeSession(on: Boolean?) : TvSession {
     override val status = MutableStateFlow(RemoteStatus(poweredOn = on))
     val sent = mutableListOf<ByteArray>()
     var powerTurnsOn = true
+    var sendsFail = false
     private val closed = CompletableDeferred<Unit>()
     override suspend fun send(frame: ByteArray) {
+        if (sendsFail) throw IOException("connection reset")
         sent += frame
         if (frame.contentEquals(RemoteMessages.key(KeyCode.POWER)) && powerTurnsOn) {
             status.value = status.value.copy(poweredOn = status.value.poweredOn != true)
@@ -29,9 +33,12 @@ private class FakeSession(on: Boolean?) : TvSession {
 private class FakeConnector(val sessions: MutableMap<String, FakeSession> = mutableMapOf()) : TvConnector {
     val attempts = mutableListOf<String>()
     var certChanged = false
+    val certChangedHosts = mutableSetOf<String>()
+    val connectDelayMs = mutableMapOf<String, Long>()
     override suspend fun connect(host: String, pinnedCertSha256: String): TvSession {
         attempts += host
-        if (certChanged) throw TvCertificateChanged()
+        connectDelayMs[host]?.let { kotlinx.coroutines.delay(it) }
+        if (certChanged || host in certChangedHosts) throw TvCertificateChanged()
         return sessions[host] ?: throw IOException("no route to $host")
     }
     override suspend fun startPairing(host: String): PairingSession = error("not used")
@@ -120,5 +127,52 @@ class TvControllerTest {
         c.start(); runCurrent()
         assertEquals(TvState.NotPaired, c.state.value)
         assertTrue(c.play(LINK, bluey).exceptionOrNull() is TvNotPaired)
+    }
+
+    @Test fun playWaitsForAnUnknownPowerStateInsteadOfToggling() = runTest {
+        val tv = FakeSession(on = null)
+        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
+        c.start(); runCurrent()
+        backgroundScope.launch { kotlinx.coroutines.delay(500); tv.status.value = RemoteStatus(poweredOn = true) }
+        assertTrue(c.play(LINK, bluey).isSuccess)
+        assertEquals(listOf(RemoteMessages.appLink(LINK).hex()), tv.sent.map { it.hex() })
+    }
+
+    @Test fun playWithAPowerStateThatNeverArrivesSendsJustTheLink() = runTest {
+        val tv = FakeSession(on = null)
+        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
+        c.start(); runCurrent()
+        assertTrue(c.play(LINK, bluey).isSuccess)
+        assertEquals(listOf(RemoteMessages.appLink(LINK).hex()), tv.sent.map { it.hex() })
+    }
+
+    @Test fun aDifferentTvFoundOnTheNetworkDoesNotErasePairing() = runTest {
+        val store = MemoryStore(host = "10.0.0.5")
+        val conn = FakeConnector().apply { certChangedHosts += "10.0.0.7" }
+        val c = TvController(store, conn, { "10.0.0.7" }, backgroundScope)
+        c.start(); runCurrent()
+        assertEquals(TvState.Unreachable, c.state.value)
+        assertEquals("pin", store.serverCertSha256)
+        assertEquals("10.0.0.5", store.host)
+    }
+
+    @Test fun remoteButtonsSurviveADeadConnection() = runTest {
+        val tv = FakeSession(on = true)
+        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
+        c.start(); runCurrent()
+        tv.sendsFail = true
+        c.volumeUp(); c.volumeDown(); c.playPause(); c.powerOff()   // must not throw
+    }
+
+    @Test fun playWaitsLongEnoughForANewAddressToBeFound() = runTest {
+        val store = MemoryStore(host = "10.0.0.5")
+        val conn = FakeConnector(mutableMapOf("10.0.0.9" to FakeSession(on = true)))
+        conn.connectDelayMs["10.0.0.5"] = 5_000   // the dead address times out
+        var discoveries = 0
+        val c = TvController(store, conn, { discoveries++; if (discoveries == 1) null else { kotlinx.coroutines.delay(6_000); "10.0.0.9" } }, backgroundScope)
+        c.start(); advanceTimeBy(5_001); runCurrent()
+        assertEquals(TvState.Unreachable, c.state.value)
+        assertTrue(c.play(LINK, bluey).isSuccess)
+        assertEquals("10.0.0.9", store.host)
     }
 }

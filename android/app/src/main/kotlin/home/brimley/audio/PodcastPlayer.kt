@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +28,8 @@ class PodcastPlayer(context: Context) {
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) = publish()
             override fun onPlaybackStateChanged(playbackState: Int) { if (playbackState == Player.STATE_ENDED) stop() else publish() }
+            // A dead or blocked URL: drop the entry rather than show silence as playing.
+            override fun onPlayerError(error: PlaybackException) = stop()
         })
     }
 

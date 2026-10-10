@@ -32,12 +32,15 @@ object FeedReader {
                 "itunes:image" -> if (!inItem && showImage == null) showImage = p.getAttributeValue(null, "href")
             } else if (event == XmlPullParser.END_TAG && p.name == "item") {
                 inItem = false
-                url?.takeIf { it.isNotBlank() }?.let { episodes += Episode(title ?: "Episode", it, date, duration) }
+                url?.takeIf { it.isNotBlank() }?.let { episodes += Episode(title ?: "Episode", https(it), date, duration) }
             }
             event = p.next()
         }
         return Podcast(showTitle ?: "Podcast", showImage, episodes)
     }
+
+    // The app allows no cleartext traffic; podcast hosts and trackers serve https too.
+    private fun https(url: String) = if (url.startsWith("http://")) "https://" + url.removePrefix("http://") else url
 
     // "1325", "22:05" or "1:02:03" -> seconds.
     fun parseDuration(text: String?): Int? {

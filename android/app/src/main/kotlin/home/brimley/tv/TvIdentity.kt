@@ -56,6 +56,7 @@ class TvIdentity {
         val s = ctx.socketFactory.createSocket() as SSLSocket
         try {
             s.connect(InetSocketAddress(host, port), CONNECT_TIMEOUT_MS)
+            s.soTimeout = HANDSHAKE_TIMEOUT_MS   // a TV that goes quiet mid-handshake must not hang the loop
             s.startHandshake()
         } catch (e: Exception) {
             runCatching { s.close() }
@@ -88,5 +89,6 @@ class TvIdentity {
     private companion object {
         const val ALIAS = "brimley-tv"
         const val CONNECT_TIMEOUT_MS = 5_000
+        const val HANDSHAKE_TIMEOUT_MS = 10_000
     }
 }

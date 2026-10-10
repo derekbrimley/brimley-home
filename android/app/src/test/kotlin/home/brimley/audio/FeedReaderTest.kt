@@ -70,4 +70,11 @@ class FeedReaderTest {
         assertNull(FeedReader.formatDate("sometime last week"))
         assertNull(FeedReader.formatDate(null))
     }
+
+    @Test fun plainHttpAudioIsUpgraded() {
+        // The app forbids cleartext traffic; many feeds still list http:// enclosures.
+        val xml = """<rss><channel><title>Show</title><item><title>One</title><enclosure url="http://dts.podtrac.com/redirect.mp3/cdn.example/one.mp3"/></item></channel></rss>"""
+        val p = FeedReader.parse(KXmlParser().apply { setInput(StringReader(xml)) })
+        assertEquals("https://dts.podtrac.com/redirect.mp3/cdn.example/one.mp3", p.episodes.single().audioUrl)
+    }
 }
