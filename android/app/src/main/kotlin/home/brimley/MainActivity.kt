@@ -25,10 +25,10 @@ class MainActivity : ComponentActivity() {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
 
-        val repository = (application as BrimleyApplication).repository
+        val app = application as BrimleyApplication
         setContent {
             BrimleyTheme {
-                BrimleyApp(repository = repository)
+                BrimleyApp(repository = app.repository, tv = app.tv)
             }
         }
     }

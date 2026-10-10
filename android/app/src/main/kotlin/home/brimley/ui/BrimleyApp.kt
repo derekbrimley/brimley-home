@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import home.brimley.BuildConfig
 import home.brimley.data.TodayRepository
+import home.brimley.tv.TvController
 import home.brimley.ui.theme.Paper
 import java.time.LocalTime
 
@@ -20,10 +21,12 @@ sealed interface Screen {
     data object Home : Screen
     data class Play(val tab: PlayTab) : Screen
     data object Note : Screen
+    data object TvPair : Screen
+    data object TvDebug : Screen
 }
 
 @Composable
-fun BrimleyApp(repository: TodayRepository) {
+fun BrimleyApp(repository: TodayRepository, tv: TvController) {
     val state by repository.state.collectAsState()
     var screen by remember { mutableStateOf<Screen>(Screen.Home) }
 
@@ -56,9 +59,14 @@ fun BrimleyApp(repository: TodayRepository) {
             is Screen.Play -> PlayScreen(
                 today = state.today,
                 repository = repository,
+                tv = tv,
+                onSetUpTv = { screen = Screen.TvPair },
+                onTvDebug = { screen = Screen.TvDebug },
                 initialTab = s.tab,
                 onHome = { screen = Screen.Home },
             )
+            Screen.TvPair -> PairScreen(tv = tv, onDone = { screen = Screen.Home })
+            Screen.TvDebug -> TvDebugScreen(catalog = state.today?.catalog.orEmpty(), tv = tv, onHome = { screen = Screen.Home }, onPair = { screen = Screen.TvPair })
             Screen.Note -> NoteScreen(
                 onCancel = { screen = Screen.Home },
                 onSave = { png -> repository.postNote(png) },

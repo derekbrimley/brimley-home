@@ -36,7 +36,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
+import home.brimley.BuildConfig
 import home.brimley.data.TodayRepository
+import home.brimley.tv.TvController
 import home.brimley.model.CatalogItem
 import home.brimley.model.MusicItem
 import home.brimley.model.MusicShelf
@@ -57,7 +59,15 @@ enum class PlayTab(val label: String, val where: String) {
 // One picker, three tabs. Music and Stories fill in with milestones 3 and 6;
 // Watch shows the catalog now and the TV connection lands in milestone 5.
 @Composable
-fun PlayScreen(today: Today?, repository: TodayRepository, initialTab: PlayTab, onHome: () -> Unit) {
+fun PlayScreen(
+    today: Today?,
+    repository: TodayRepository,
+    tv: TvController,
+    onSetUpTv: () -> Unit,
+    onTvDebug: () -> Unit,
+    initialTab: PlayTab,
+    onHome: () -> Unit,
+) {
     var tab by remember { mutableStateOf(initialTab) }
     var pending by remember { mutableStateOf<CatalogItem?>(null) }
     var shelves by remember { mutableStateOf<List<MusicShelf>?>(null) }
@@ -81,6 +91,10 @@ fun PlayScreen(today: Today?, repository: TodayRepository, initialTab: PlayTab, 
             Column(Modifier.weight(1f)) {
                 Text("Play something", style = MaterialTheme.typography.headlineLarge, color = Paper)
                 Text(tab.where, style = MaterialTheme.typography.bodySmall, color = Paper)
+            }
+            if (BuildConfig.DEBUG && tab == PlayTab.Watch) {
+                InkButton("TV test", onClick = onTvDebug, filled = false, onPaper = false)
+                Spacer(Modifier.width(14.dp))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 PlayTab.entries.forEach { t ->
