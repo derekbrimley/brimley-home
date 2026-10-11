@@ -11,6 +11,9 @@ import { fetchWeather } from "./weather";
 
 const SHEET_STALE_MS = 10 * 60 * 1000;
 const RESOLVE_STALE_MS = 24 * 60 * 60 * 1000;
+// A hidden title (no paid service found) is retried sooner, so adding a row to
+// the Services tab shows it within the hour instead of the next day.
+const HIDDEN_STALE_MS = 60 * 60 * 1000;
 const MAX_RESOLVES_PER_REQUEST = 4;
 
 async function settle<T>(label: string, p: Promise<T>, warnings: string[]): Promise<T | null> {
@@ -33,6 +36,12 @@ export async function freshSheet(force = false): Promise<SheetData> {
     if (cached) return cached;
     throw e;
   }
+}
+
+export function isDue(have: CatalogRow | undefined, now: number): boolean {
+  if (!have || !have.resolved_at) return true;
+  const age = now - Date.parse(have.resolved_at);
+  return age > (have.service ? RESOLVE_STALE_MS : HIDDEN_STALE_MS);
 }
 
 // Resolve rows that are new or older than a day, a few at a time so a request
@@ -76,7 +85,7 @@ export async function syncCatalog(sheet: SheetData, limit = MAX_RESOLVES_PER_REQ
 
   const due = wanted.filter((w) => {
     const have = existing.get(w.key);
-    return !have || !have.resolved_at || Date.now() - Date.parse(have.resolved_at) > RESOLVE_STALE_MS;
+    return isDue(have, Date.now());
   });
   for (const w of due.slice(0, limit)) {
     try {
@@ -100,6 +109,9 @@ export async function buildToday(now = new Date()): Promise<Today> {
   const family = parseFamily(process.env.FAMILY_MEMBERS);
 
   const sheet = await settle("sheet", freshSheet(), warnings);
+  if (sheet && sheet.watch.some((r) => r.shelf && r.shelf !== "videos") && sheet.services.length === 0) {
+    warnings.push("sheet: the Services tab is empty, so no shows or movies can be shown");
+  }
 
   const dayStart = new Date(`${date}T00:00:00`);
   const [weather, eventsRaw, completions, cardRows, catalogRows, kitchen] = await Promise.all([
