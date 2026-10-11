@@ -8,6 +8,7 @@ import { fetchSheet, serviceLabelFor, writeWatchResult, type SheetData } from ".
 import { addDays, localDateString, localWeekday, weekStart } from "./time";
 import type { Today, TodayEvent } from "./types";
 import { fetchWeather } from "./weather";
+import { fetchYotoPlaying } from "./yoto";
 
 const SHEET_STALE_MS = 10 * 60 * 1000;
 const RESOLVE_STALE_MS = 24 * 60 * 60 * 1000;
@@ -118,13 +119,14 @@ export async function buildToday(now = new Date()): Promise<Today> {
   }
 
   const dayStart = new Date(`${date}T00:00:00`);
-  const [weather, eventsRaw, completions, cardRows, catalogRows, kitchen] = await Promise.all([
+  const [weather, eventsRaw, completions, cardRows, catalogRows, kitchen, yotoPlaying] = await Promise.all([
     settle("weather", process.env.HOME_LATLON ? fetchWeather(process.env.HOME_LATLON, tz) : Promise.resolve(null), warnings),
     settle("calendar", fetchEvents(isoAtLocal(date, "00:00", tz), isoAtLocal(addDays(date, 2), "00:00", tz)), warnings),
     settle("jobs", getCompletions(weekStart(date, weekday), date), warnings),
     settle("cards", getCardRows(), warnings),
     sheet ? settle("catalog", syncCatalog(sheet), warnings) : Promise.resolve(null),
     settle("crate", fetchKitchenPlaying(), warnings),
+    settle("yoto", fetchYotoPlaying(), warnings),
   ]);
   void dayStart;
 
@@ -142,7 +144,7 @@ export async function buildToday(now = new Date()): Promise<Today> {
     tomorrowFirst,
     jobs: sheet ? buildJobsBlocks(sheet.jobs, sheet.bounties, completions ?? new Set(), date, tz, now) : [],
     cards: cardRows ? activeCards(cardRows, now.toISOString()) : [],
-    playing: kitchen ? [kitchen] : [],
+    playing: [kitchen, yotoPlaying].filter((p) => p !== null),
     catalog: catalogRows && sheet ? toCatalogItems(catalogRows, sheet.services) : [],
     makes: sheet ? sheet.makes.map((m) => ({ title: m.title, who: m.who || null, link: m.link || null, imageUrl: m.imageUrl || null })) : [],
     warnings,
