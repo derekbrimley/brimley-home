@@ -50,6 +50,7 @@ object KeyCode {
     const val VOLUME_UP = 24
     const val VOLUME_DOWN = 25
     const val MEDIA_PLAY_PAUSE = 85
+    const val DPAD_CENTER = 23
 }
 
 object RemoteMessages {
