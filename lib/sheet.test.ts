@@ -57,4 +57,8 @@ describe("parseSheet", () => {
     expect(data.makes[0].who).toBe("Sylvie");
     expect(data.services).toEqual(["disneyplus", "max", "netflix"]);
   });
+  it("keeps the first service when the Services tab has no header row", () => {
+    expect(parseSheet({ Services: [["Max"], ["Prime"]] }).services).toEqual(["max", "prime"]);
+    expect(parseSheet({ Services: [["Services"], ["Max"]] }).services).toEqual(["max"]);
+  });
 });

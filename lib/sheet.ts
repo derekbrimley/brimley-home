@@ -104,7 +104,11 @@ export function parseSheet(grids: Record<string, Grid>, fetchedAt = new Date().t
   const makes: MakeRow[] = body("Makes")
     .map((r, i) => ({ row: i + 2, title: cell(r, 0), who: cell(r, 1), link: cell(r, 2), imageUrl: cell(r, 3) }))
     .filter((r) => r.title);
-  const services = body("Services").map((r) => normalizeService(cell(r, 0))).filter(Boolean);
+  // One column, so a missing header row is easy to miss; only skip row 1 if it is one.
+  const serviceRows = grids["Services"] ?? [];
+  const services = (/^services?$/i.test(cell(serviceRows[0], 0)) ? serviceRows.slice(1) : serviceRows)
+    .map((r) => normalizeService(cell(r, 0)))
+    .filter(Boolean);
   return { watch, listen, jobs, bounties, makes, services, fetchedAt };
 }
 
