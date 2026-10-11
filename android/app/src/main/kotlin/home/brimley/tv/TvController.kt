@@ -5,6 +5,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -30,6 +31,7 @@ class TvController(
     private val kick = Channel<Unit>(Channel.CONFLATED)   // skip the backoff wait
     private var started: StartedTitle? = null
     private var loop: Job? = null
+    private var autoPlay: Job? = null
     private var pairingHost: String? = null
 
     fun start() {
@@ -114,9 +116,25 @@ class TvController(
                 withTimeoutOrNull(POWER_ON_MS) { s.status.first { it.poweredOn == true } }
                     ?: throw IOException("The TV didn't turn on")
             }
+            val plan = AutoPlay.forLink(link)
+            val warm = plan != null && s.status.value.appPackage == plan.appPackage
+            autoPlay?.cancel()
             started = title
             s.send(RemoteMessages.appLink(link))
             publish(s.status.value)
+            if (plan != null) autoPlay = scope.launch { pressThrough(s, plan.appPackage, if (warm) plan.warmDelaysMs else plan.coldDelaysMs) }
+        }
+    }
+
+    // Press OK past the profile picker and onto Play. Stops if the app never
+    // opens, something else comes to the front, or the TV turns off.
+    private suspend fun pressThrough(s: TvSession, appPackage: String, delaysMs: List<Long>) {
+        withTimeoutOrNull(APP_OPEN_MS) { s.status.first { it.appPackage == appPackage } } ?: return
+        for (d in delaysMs) {
+            delay(d)
+            val st = s.status.value
+            if (st.poweredOn == false || st.appPackage != appPackage) return
+            try { s.send(RemoteMessages.key(KeyCode.DPAD_CENTER)) } catch (_: IOException) { return }
         }
     }
 
@@ -130,7 +148,9 @@ class TvController(
         if (session.value?.status?.value?.poweredOn == true) key(KeyCode.POWER)
     }
 
+    // Any button on the tablet means someone is driving; stop pressing OK for them.
     private suspend fun key(code: Int) {
+        autoPlay?.cancel()
         val s = session.value ?: return
         try { s.send(RemoteMessages.key(code)) } catch (_: IOException) { s.close() }
     }
@@ -159,5 +179,6 @@ class TvController(
         const val RECONNECT_MS = 16_000L   // a dead cached address (5 s) + discovery (6 s) + connect
         const val POWER_STATE_MS = 3_000L
         const val POWER_ON_MS = 8_000L
+        const val APP_OPEN_MS = 15_000L
     }
 }

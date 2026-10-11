@@ -95,6 +95,11 @@ six-character code appears on the TV; tap it in. That's the only pairing; it
 repeats only if the TV is reset. Debug builds have a "TV test" button on the
 Watch tab that sends each title's link to the TV.
 
+Links open the app on the title's page, so for Max and Prime Video the tablet
+then presses OK for you: once for Max's "who's watching" (only when Max wasn't
+already open) and once for Play. The waits are in `tv/AutoPlay.kt`; lengthen
+them if a press lands before the page has loaded.
+
 ### Music and podcasts on the tablet
 
 Albums play through Spotify on the DC-1 (`KITCHEN_DEVICE_NAME=DC-1` in Vercel),
