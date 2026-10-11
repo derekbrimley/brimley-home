@@ -14,6 +14,17 @@ export async function setSheetCache(sheet: SheetData): Promise<void> {
   await supabaseAdmin().from("kv").upsert({ key: "sheet", value: sheet, updated_at: new Date().toISOString() }, { onConflict: "key" });
 }
 
+// Small JSON values (Yoto's tokens, library and last command).
+export async function getKv<T>(key: string): Promise<T | null> {
+  const { data } = await supabaseAdmin().from("kv").select("value").eq("key", key).maybeSingle();
+  return (data?.value as T | undefined) ?? null;
+}
+
+export async function setKv(key: string, value: unknown): Promise<void> {
+  await supabaseAdmin().from("kv").upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
+}
+
+
 // ── catalog ──────────────────────────────────────────────────────────────────
 
 export async function getCatalogRows(): Promise<CatalogRow[]> {
