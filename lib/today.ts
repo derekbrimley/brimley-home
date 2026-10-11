@@ -46,7 +46,10 @@ export function isDue(have: CatalogRow | undefined, now: number): boolean {
 
 // Resolve rows that are new or older than a day, a few at a time so a request
 // never waits on a dozen TMDB calls. The daily cron calls this with no limit.
-export async function syncCatalog(sheet: SheetData, limit = MAX_RESOLVES_PER_REQUEST): Promise<CatalogRow[]> {
+export interface SyncOptions { limit?: number; force?: boolean; errors?: string[] }
+
+export async function syncCatalog(sheet: SheetData, opts: SyncOptions = {}): Promise<CatalogRow[]> {
+  const { limit = MAX_RESOLVES_PER_REQUEST, force = false, errors } = opts;
   const existing = new Map((await getCatalogRows()).map((r) => [r.source_key, r]));
   const wanted: { key: string; run: () => Promise<CatalogRow> }[] = [];
 
@@ -85,15 +88,16 @@ export async function syncCatalog(sheet: SheetData, limit = MAX_RESOLVES_PER_REQ
 
   const due = wanted.filter((w) => {
     const have = existing.get(w.key);
-    return isDue(have, Date.now());
+    return force || isDue(have, Date.now());
   });
   for (const w of due.slice(0, limit)) {
     try {
       const row = await w.run();
       await upsertCatalogRow(row);
       existing.set(w.key, row);
-    } catch {
+    } catch (e) {
       // leave it unresolved; next request tries again
+      errors?.push(`${w.key}: ${(e as Error).message}`);
     }
   }
   // Only rows still in the sheet count.
