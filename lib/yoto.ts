@@ -174,10 +174,20 @@ async function library(token: string, force = false): Promise<CachedLibrary> {
 
 // GET /api/yoto: the cards, and whether the player is awake right now.
 // `players` lists every player, for picking YOTO_DEVICE_ID; the tablet ignores it.
-export async function fetchStories(): Promise<{ cards: StoryCard[]; player: YotoPlayer | null; players: YotoPlayer[] }> {
+// `debug` carries what /api/today's Yoto entry is built from (the player's
+// raw status, our last command, the cached player id); the tablet ignores it.
+export async function fetchStories(): Promise<{ cards: StoryCard[]; player: YotoPlayer | null; players: YotoPlayer[]; debug: unknown }> {
   const token = await accessToken();
-  const [lib, devices] = await Promise.all([library(token), yoto<RawDevices>("/device-v2/devices/mine", token)]);
-  return { cards: lib.cards, player: pickPlayer(devices, process.env.YOTO_DEVICE_ID), players: listPlayers(devices) };
+  const [lib, devices, ours] = await Promise.all([library(token), yoto<RawDevices>("/device-v2/devices/mine", token), getKv<YotoNow>("yoto_now")]);
+  const status = lib.playerId
+    ? await yoto<unknown>(`/device-v2/${encodeURIComponent(lib.playerId)}/status`, token, 6000).catch((e: Error) => ({ error: e.message }))
+    : null;
+  return {
+    cards: lib.cards,
+    player: pickPlayer(devices, process.env.YOTO_DEVICE_ID),
+    players: listPlayers(devices),
+    debug: { cachedPlayerId: lib.playerId, ours, status, now: new Date().toISOString() },
+  };
 }
 
 // Daily cron: re-read the library so new cards appear the next morning.
