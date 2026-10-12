@@ -57,8 +57,8 @@ fun PlayingCard(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             when (playing.size) {
                 0 -> NothingPlaying()
-                1 -> NowPlaying(playing[0], big = true, onControl = onControl)
-                else -> playing.take(2).forEach { NowPlaying(it, big = false, onControl = onControl) }
+                1 -> NowPlaying(playing[0], onControl = onControl)
+                else -> playing.take(2).forEach { CompactPlaying(it, onControl = onControl) }
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -156,38 +156,71 @@ private fun NothingPlaying() {
     }
 }
 
+private fun whereLabel(p: Playing) = when (p.target) { "kitchen", "podcast" -> "Kitchen speaker"; "tv" -> "Living room TV"; else -> "Yoto" }
+
 @Composable
-private fun NowPlaying(p: Playing, big: Boolean, onControl: (String, String) -> Unit) {
-    val coverSize = if (big) 150.dp else 84.dp
-    Row(verticalAlignment = Alignment.Top) {
-        Box(
-            Modifier
-                .size(coverSize)
-                .clip(RoundedCornerShape(14.dp))
-                .background(PaperBright)
-                .border(BorderStroke(Rules.thin, Ink), RoundedCornerShape(14.dp)),
-        ) {
-            if (p.imageUrl != null) {
-                AsyncImage(model = p.imageUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(coverSize))
-            } else if (p.target == "tv") {
-                TvIllustration(Modifier.size(coverSize))
-            } else if (p.target == "yoto") {
-                YotoIllustration(Modifier.size(coverSize))
-            } else {
-                RecordIllustration(Modifier.size(coverSize))
-            }
+private fun Cover(p: Playing, size: androidx.compose.ui.unit.Dp) {
+    Box(
+        Modifier
+            .size(size)
+            .clip(RoundedCornerShape(14.dp))
+            .background(PaperBright)
+            .border(BorderStroke(Rules.thin, Ink), RoundedCornerShape(14.dp)),
+    ) {
+        if (p.imageUrl != null) {
+            AsyncImage(model = p.imageUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(size))
+        } else if (p.target == "tv") {
+            TvIllustration(Modifier.size(size))
+        } else if (p.target == "yoto") {
+            YotoIllustration(Modifier.size(size))
+        } else {
+            RecordIllustration(Modifier.size(size))
         }
+    }
+}
+
+// One thing playing: the big cover, the title, and all its controls.
+@Composable
+private fun NowPlaying(p: Playing, onControl: (String, String) -> Unit) {
+    Row(verticalAlignment = Alignment.Top) {
+        Cover(p, 150.dp)
         Spacer(Modifier.width(18.dp))
         Column {
-            Text(p.title, style = if (big) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleLarge, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(p.title, style = MaterialTheme.typography.headlineMedium, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
             p.subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis) }
             Spacer(Modifier.height(8.dp))
-            Pill(
-                when (p.target) { "kitchen", "podcast" -> "Kitchen speaker"; "tv" -> "Living room TV"; else -> "Yoto" },
-                filled = false,
-            )
+            Pill(whereLabel(p), filled = false)
             Spacer(Modifier.height(10.dp))
             Controls(p, onControl)
         }
     }
+}
+
+// Two things playing: a row each, fixed height so both always fit. The main
+// button only (play/pause), plus Stop for the Yoto, which has no speaker of
+// its own to turn down from here.
+@Composable
+private fun CompactPlaying(p: Playing, onControl: (String, String) -> Unit) {
+    Row(Modifier.fillMaxWidth().height(72.dp), verticalAlignment = Alignment.CenterVertically) {
+        Cover(p, 72.dp)
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(p.title, style = MaterialTheme.typography.titleLarge, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(whereLabel(p), style = MaterialTheme.typography.bodyMedium, color = Ink, maxLines = 1)
+        }
+        Spacer(Modifier.width(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (p.target == "tv") {
+                RoundButton(filled = true, onClick = { onControl("tv", "playpause") }) { PlayPauseIcon(it) }
+            } else {
+                RoundButton(filled = true, onClick = { onControl(p.target, if (p.isPlaying) "pause" else "resume") }) { if (p.isPlaying) PauseIcon(it) else PlayIcon(it) }
+            }
+            if (p.target == "yoto") RoundButton(filled = false, onClick = { onControl("yoto", "stop") }) { StopIcon(it) }
+        }
+    }
+}
+
+@Composable
+private fun StopIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(20.dp)) {
+    drawRect(c)
 }

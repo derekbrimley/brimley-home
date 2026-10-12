@@ -263,12 +263,19 @@ export function parseEvents(raw: string): LiveEvents | null {
 const COMMAND_SETTLE_MS = 15_000;
 // With no word from the player, believe our last command this long.
 const NO_ANSWER_TRUST_MS = 3 * 60 * 60 * 1000;
+// A pause from the tablet keeps the entry (so it can be resumed) this long.
+// A pause at the player itself is how a kid "stops" it, so that one is quiet.
+const OUR_PAUSE_SHOWS_MS = 30 * 60 * 1000;
 
 export function resolveYoto(live: LiveEvents | null, ours: YotoNow | null, now: number): { cardId: string; playing: boolean; chapter: string | null } | null {
   const settling = ours !== null && now - ours.at < COMMAND_SETTLE_MS;
   if (live && !settling) {
     const cardId = live.cardId && live.cardId !== "none" ? live.cardId : null;
     if (!cardId || (live.playbackStatus !== "playing" && live.playbackStatus !== "paused")) return null;
+    if (live.playbackStatus === "paused") {
+      const ourPause = ours !== null && ours.cardId === cardId && !ours.playing && now - ours.at < OUR_PAUSE_SHOWS_MS;
+      if (!ourPause) return null;
+    }
     return { cardId, playing: live.playbackStatus === "playing", chapter: live.chapterTitle };
   }
   if (ours?.cardId && now - ours.at < NO_ANSWER_TRUST_MS) return { cardId: ours.cardId, playing: ours.playing, chapter: null };

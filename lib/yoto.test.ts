@@ -99,8 +99,16 @@ describe("resolveYoto / toYotoPlaying", () => {
       target: "yoto", title: "The Gruffalo", subtitle: "Chapter 2", imageUrl: "g.jpg", isPlaying: true, positionMs: null, durationMs: null,
     });
   });
-  it("shows a pause, and nothing once stopped or with no card", () => {
-    expect(resolveYoto(live("c1", "paused"), null, t0)?.playing).toBe(false);
+  it("keeps a pause made from the tablet, so it can be resumed, for half an hour", () => {
+    const ourPause = { cardId: "c1", playing: false, at: t0 - 60_000 };
+    expect(resolveYoto(live("c1", "paused"), ourPause, t0)?.playing).toBe(false);
+    expect(resolveYoto(live("c1", "paused"), { ...ourPause, at: t0 - 31 * 60_000 }, t0)).toBeNull();
+  });
+  it("treats a pause at the player (its button) as stopped", () => {
+    expect(resolveYoto(live("c1", "paused"), null, t0)).toBeNull();
+    expect(resolveYoto(live("c1", "paused"), { cardId: "c1", playing: true, at: t0 - 60_000 }, t0)).toBeNull();
+  });
+  it("shows nothing once stopped or with no card", () => {
     expect(resolveYoto(live("c1", "stopped"), null, t0)).toBeNull();
     expect(resolveYoto(live("none", "playing"), null, t0)).toBeNull();
   });
