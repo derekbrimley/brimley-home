@@ -312,7 +312,7 @@ async function accessToken(): Promise<string> {
 
 async function yoto<T>(path: string, token: string, timeoutMs = 8000): Promise<T> {
   const res = await timedFetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } }, timeoutMs);
-  if (!res.ok) throw new Error(`Yoto ${res.status}`);
+  if (!res.ok) throw new Error(`Yoto ${res.status} on ${path.split("?")[0]}`);
   return (await res.json()) as T;
 }
 
@@ -606,7 +606,7 @@ authorize.search = new URLSearchParams({
   response_type: "code",
   client_id: clientId,
   redirect_uri: redirectUri,
-  scope: "openid profile offline_access",
+  scope: "openid profile offline_access family:library:view family:devices:view family:devices:control",
   audience: "https://api.yotoplay.com",
   code_challenge: challenge,
   code_challenge_method: "S256",

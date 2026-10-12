@@ -119,7 +119,7 @@ async function accessToken(): Promise<string> {
 
 async function yoto<T>(path: string, token: string, timeoutMs = 8000): Promise<T> {
   const res = await timedFetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } }, timeoutMs);
-  if (!res.ok) throw new Error(`Yoto ${res.status}`);
+  if (!res.ok) throw new Error(`Yoto ${res.status} on ${path.split("?")[0]}`);
   return (await res.json()) as T;
 }
 

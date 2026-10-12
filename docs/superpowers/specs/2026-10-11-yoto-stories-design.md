@@ -106,7 +106,8 @@ fallback.
 ## 3. Setup (Derek, once)
 
 1. At yoto.dev, sign in, then My apps → create an app. Allowed callback URL:
-   `http://localhost:8765/callback`. Note its client ID.
+   `http://localhost:8765/callback`; scopes `family:library:view`,
+   `family:devices:view`, `family:devices:control`. Note its client ID.
 2. `node scripts/yoto-login.mjs <client id>`, then sign in with the family Yoto
    account.
 3. Vercel env: `YOTO_CLIENT_ID`, `YOTO_REFRESH_TOKEN`, optionally `YOTO_DEVICE_ID`.
@@ -143,10 +144,10 @@ fallback.
   maintained open-source clients (`yoto_api` for Python, `yoto-nodejs-client`),
   which match yoto.dev's "Connecting to players" page. yoto.dev itself couldn't be
   read while writing this. If the host differs, it's one constant.
-- The scopes requested are `openid profile offline_access`, which is what both
-  clients ask for. If the commands are refused, the app may need
-  `family:devices:control` added at yoto.dev, which changes the login script's
-  scope line.
+- Scopes: the login asks for `offline_access family:library:view family:devices:view
+  family:devices:control`, which must also be turned on for the app at yoto.dev. The
+  first login asked only for `openid profile offline_access` and every API call
+  answered 403.
 - If Yoto's portal refuses a `localhost` callback, the fallback is the device-code
   flow (`/oauth/device/code`). It still works in `yoto_api` 4.x, but is reported as
   deprecated.

@@ -1,7 +1,8 @@
 // One-time Yoto login, run on a laptop: node scripts/yoto-login.mjs <client id>
 // Opens Yoto's sign-in page, catches the redirect on localhost and prints the
 // refresh token for YOTO_REFRESH_TOKEN. The Yoto app (yoto.dev → My apps) needs
-// http://localhost:8765/callback as an allowed callback URL.
+// http://localhost:8765/callback as an allowed callback URL, and the scopes
+// below turned on.
 import { createHash, randomBytes } from "node:crypto";
 import { createServer } from "node:http";
 import { exec } from "node:child_process";
@@ -21,7 +22,7 @@ authorize.search = new URLSearchParams({
   response_type: "code",
   client_id: clientId,
   redirect_uri: redirectUri,
-  scope: "openid profile offline_access",
+  scope: "openid profile offline_access family:library:view family:devices:view family:devices:control",
   audience: "https://api.yotoplay.com",
   code_challenge: challenge,
   code_challenge_method: "S256",
