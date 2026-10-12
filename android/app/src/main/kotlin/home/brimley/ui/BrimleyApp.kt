@@ -40,6 +40,7 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
     val onControl: (String, String) -> Unit = { target, action ->
         when (target) {
             "kitchen" -> repository.controlMusic(action)
+            "yoto" -> repository.controlYoto(action)
             "podcast" -> when (action) { "back" -> podcasts.seekBy(-30_000); "forward" -> podcasts.seekBy(30_000); else -> podcasts.toggle() }
             "tv" -> scope.launch {
                 when (action) { "playpause" -> tv.playPause(); "volup" -> tv.volumeUp(); "voldown" -> tv.volumeDown(); "off" -> tv.powerOff() }

@@ -2,6 +2,8 @@ package home.brimley.data
 
 import home.brimley.model.MusicShelf
 import home.brimley.model.Playing
+import home.brimley.model.Stories
+import home.brimley.model.StoryTrack
 import home.brimley.model.Today
 import home.brimley.model.TodayJob
 import kotlinx.coroutines.CoroutineScope
@@ -125,6 +127,28 @@ class TodayRepository(private val api: HomeApi, cacheDir: File, private val wake
         scope.launch {
             runCatching { api.controlMusic(action) }
             delay(1_500)
+            refresh()
+        }
+    }
+
+    suspend fun stories(): Result<Stories> =
+        if (!api.isConfigured) Result.success(SampleToday.stories()) else runCatching { api.stories() }
+
+    suspend fun storyTracks(cardId: String): Result<List<StoryTrack>> = runCatching { api.storyTracks(cardId) }
+
+    // The backend records the command, so the refresh shows the Yoto at once.
+    suspend fun playOnYoto(cardId: String): Result<Unit> = runCatching { api.playOnYoto(cardId); refresh() }
+
+    fun controlYoto(action: String) {
+        val today = _state.value.today ?: return
+        // Optimistic, like the kitchen: the button flips (or the entry goes) under the finger.
+        val updated = when (action) {
+            "stop" -> today.playing.filter { it.target != "yoto" }
+            else -> today.playing.map { if (it.target == "yoto") it.copy(isPlaying = action == "resume") else it }
+        }
+        _state.update { it.copy(today = today.copy(playing = updated)) }
+        scope.launch {
+            runCatching { api.controlYoto(action) }
             refresh()
         }
     }

@@ -61,7 +61,7 @@ data class Card(
     val source: String = "",
 )
 
-// target: "kitchen" | "tv" | "yoto" from the server; "podcast" is added on the tablet (ui/MergePlaying.kt).
+// target: "kitchen" | "tv" | "yoto" from the server; "podcast" (anything playing on the tablet) is added on the tablet (ui/MergePlaying.kt).
 @Serializable
 data class Playing(
     val target: String,
@@ -114,3 +114,17 @@ data class MusicItem(
     val uri: String,
     val mediaType: String = "album",
 )
+
+// Stories from GET /api/yoto (the family's Yoto cards) and /api/yoto/cards/{id}.
+// Mirrors StoryCard / YotoPlayer / StoryTrack in lib/yoto.ts.
+@Serializable
+data class StoryCard(val id: String, val title: String, val author: String? = null, val imageUrl: String? = null)
+
+@Serializable
+data class YotoPlayer(val id: String, val name: String, val online: Boolean = false)
+
+@Serializable
+data class Stories(val cards: List<StoryCard> = emptyList(), val player: YotoPlayer? = null)
+
+@Serializable
+data class StoryTrack(val title: String, val chapter: String? = null, val url: String, val durationSec: Int? = null)

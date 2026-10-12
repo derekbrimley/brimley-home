@@ -6,11 +6,14 @@ import home.brimley.model.JobsBlock
 import home.brimley.model.MusicItem
 import home.brimley.model.MusicShelf
 import home.brimley.model.Playing
+import home.brimley.model.Stories
+import home.brimley.model.StoryCard
 import home.brimley.model.Today
 import home.brimley.model.TodayBounty
 import home.brimley.model.TodayEvent
 import home.brimley.model.TodayJob
 import home.brimley.model.Weather
+import home.brimley.model.YotoPlayer
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -36,6 +39,15 @@ object SampleToday {
             MusicItem(9, "Here Come the ABCs", "They Might Be Giants", uri = "spotify:album:9"),
             MusicItem(10, "Encanto", "Soundtrack", uri = "spotify:album:10"),
         )),
+    )
+
+    fun stories(): Stories = Stories(
+        cards = listOf(
+            StoryCard("s1", "The Gruffalo", "Julia Donaldson"),
+            StoryCard("s2", "Winnie-the-Pooh", "A. A. Milne"),
+            StoryCard("s3", "Animal Songs"),
+        ),
+        player = YotoPlayer("sample", "Yoto", online = true),
     )
 
     fun today(): Today = Today(

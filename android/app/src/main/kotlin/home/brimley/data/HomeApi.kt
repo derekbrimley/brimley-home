@@ -1,6 +1,8 @@
 package home.brimley.data
 
 import home.brimley.model.MusicShelf
+import home.brimley.model.Stories
+import home.brimley.model.StoryTrack
 import home.brimley.model.Today
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -56,6 +58,30 @@ class HomeApi(private val baseUrl: String, private val token: String) {
         post("/api/music/control", buildJsonObject { put("action", action) }.toString())
     }
 
+    suspend fun stories(): Stories = withContext(Dispatchers.IO) {
+        client.newCall(request("/api/yoto").get().build()).execute().use { res ->
+            val body = res.body?.string().orEmpty()
+            if (!res.isSuccessful) throw ApiException(errorMessage(body) ?: "yoto ${res.code}")
+            json.decodeFromString(Stories.serializer(), body)
+        }
+    }
+
+    suspend fun storyTracks(cardId: String): List<StoryTrack> = withContext(Dispatchers.IO) {
+        client.newCall(request("/api/yoto/cards/$cardId").get().build()).execute().use { res ->
+            val body = res.body?.string().orEmpty()
+            if (!res.isSuccessful) throw ApiException(errorMessage(body) ?: "yoto ${res.code}")
+            json.decodeFromString(TracksResponse.serializer(), body).tracks
+        }
+    }
+
+    suspend fun playOnYoto(cardId: String) = withContext(Dispatchers.IO) {
+        post("/api/yoto/play", buildJsonObject { put("cardId", cardId) }.toString())
+    }
+
+    suspend fun controlYoto(action: String) = withContext(Dispatchers.IO) {
+        post("/api/yoto/control", buildJsonObject { put("action", action) }.toString())
+    }
+
     suspend fun setJobDone(jobId: String, done: Boolean, date: String) = withContext(Dispatchers.IO) {
         val body = buildJsonObject { put("jobId", jobId); put("done", done); put("date", date) }
         post("/api/jobs/done", body.toString())
@@ -83,3 +109,6 @@ class HomeApi(private val baseUrl: String, private val token: String) {
 
 @Serializable
 private data class ShelvesResponse(val shelves: List<MusicShelf>)
+
+@Serializable
+private data class TracksResponse(val tracks: List<StoryTrack>)

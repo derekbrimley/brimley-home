@@ -14,7 +14,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -44,6 +48,7 @@ import home.brimley.audio.FeedReader
 import home.brimley.audio.Podcast
 import home.brimley.audio.PodcastFeeds
 import home.brimley.audio.PodcastPlayer
+import home.brimley.audio.storyQueue
 import home.brimley.tv.StartedTitle
 import home.brimley.tv.TvController
 import home.brimley.tv.TvNotPaired
@@ -51,6 +56,9 @@ import home.brimley.tv.TvState
 import home.brimley.model.CatalogItem
 import home.brimley.model.MusicItem
 import home.brimley.model.MusicShelf
+import home.brimley.model.Stories
+import home.brimley.model.StoryCard
+import home.brimley.model.YotoPlayer
 import home.brimley.model.Today
 import kotlinx.coroutines.launch
 import home.brimley.ui.theme.Ink
@@ -65,7 +73,7 @@ enum class PlayTab(val label: String, val where: String) {
     Stories("Stories", "Stories go to the Yoto, or play here"),
 }
 
-// One picker, three tabs. Music goes to Spotify on the tablet, Watch to the TV, Listen plays here; Stories fill in with milestone 6.
+// One picker, three tabs. Music goes to Spotify on the tablet, Watch to the TV, Listen plays here, Stories to the Yoto or here.
 @Composable
 fun PlayScreen(
     today: Today?,
@@ -85,11 +93,19 @@ fun PlayScreen(
     var shelves by remember { mutableStateOf<List<MusicShelf>?>(null) }
     var musicError by remember { mutableStateOf<String?>(null) }
     var musicNotice by remember { mutableStateOf<String?>(null) }
+    var stories by remember { mutableStateOf<Stories?>(null) }
+    var storiesError by remember { mutableStateOf<String?>(null) }
+    var story by remember { mutableStateOf<StoryCard?>(null) }
+    var storyStatus by remember { mutableStateOf<String?>(null) }
+    var storyBusy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(tab) {
         if (tab == PlayTab.Music && shelves == null) {
             repository.musicShelves().onSuccess { shelves = it }.onFailure { musicError = it.message ?: "Couldn't reach Crate" }
+        }
+        if (tab == PlayTab.Stories && stories == null) {
+            repository.stories().onSuccess { stories = it }.onFailure { storiesError = it.message ?: "Couldn't reach Yoto" }
         }
     }
 
@@ -139,7 +155,7 @@ fun PlayScreen(
                         }
                     },
                 )
-                PlayTab.Stories -> ComingSoon("Yoto cards arrive in milestone 6.")
+                PlayTab.Stories -> StoryShelf(stories, storiesError, onPick = { story = it; storyStatus = null })
             }
             pending?.let { item ->
                 if (item.shelf == "listen") {
@@ -161,6 +177,35 @@ fun PlayScreen(
                         }
                     })
                 }
+            }
+            story?.let { card ->
+                StorySheet(
+                    card, player = stories?.player, status = storyStatus, busy = storyBusy,
+                    onCancel = { story = null },
+                    onYoto = {
+                        storyBusy = true
+                        storyStatus = "Starting on the Yoto…"
+                        scope.launch {
+                            repository.playOnYoto(card.id)
+                                .onSuccess { story = null; onHome() }
+                                .onFailure { storyStatus = it.message ?: "Couldn't reach the Yoto" }
+                            storyBusy = false
+                        }
+                    },
+                    onHere = {
+                        storyBusy = true
+                        storyStatus = "Getting it ready…"
+                        scope.launch {
+                            repository.storyTracks(card.id)
+                                .onSuccess { tracks ->
+                                    val queue = storyQueue(card, tracks)
+                                    if (queue == null) storyStatus = "This card can't play here" else { podcasts.playQueue(queue); story = null; onHome() }
+                                }
+                                .onFailure { storyStatus = it.message ?: "Couldn't reach Yoto" }
+                            storyBusy = false
+                        }
+                    },
+                )
             }
         }
     }
@@ -329,6 +374,85 @@ private fun EpisodeSheet(item: CatalogItem, feeds: PodcastFeeds, onCancel: () ->
         }
         Spacer(Modifier.height(18.dp))
         InkButton("Not now", onClick = onCancel, filled = false, modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun StoryShelf(stories: Stories?, error: String?, onPick: (StoryCard) -> Unit) {
+    when {
+        stories == null && error == null -> ComingSoon("Looking for the Yoto cards…")
+        stories == null -> ComingSoon(error ?: "")
+        stories.cards.isEmpty() -> ComingSoon("No Yoto cards yet. Cards added in the Yoto app show up here.")
+        else -> LazyVerticalGrid(
+            columns = GridCells.Adaptive(170.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 30.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            gridItems(stories.cards, key = { it.id }) { StoryCover(it, onClick = { onPick(it) }) }
+        }
+    }
+}
+
+@Composable
+private fun StoryCover(card: StoryCard, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(shape)
+                .background(PaperBright)
+                .border(BorderStroke(4.dp, Ink), shape),
+        ) {
+            if (card.imageUrl != null) {
+                AsyncImage(model = card.imageUrl, contentDescription = card.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            } else {
+                BookIllustration(Modifier.fillMaxSize().padding(22.dp))
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(card.title, style = MaterialTheme.typography.labelLarge, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        card.author?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+    }
+}
+
+// Where a story plays. The Yoto tile stays tappable when the player looks
+// asleep: the kid may have just pressed its button, and the backend checks.
+@Composable
+private fun StorySheet(card: StoryCard, player: YotoPlayer?, status: String?, busy: Boolean, onCancel: () -> Unit, onYoto: () -> Unit, onHere: () -> Unit) {
+    Sheet(onCancel, width = 640.dp) {
+        Text(card.title, style = MaterialTheme.typography.headlineMedium, color = Ink)
+        card.author?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Ink, modifier = Modifier.padding(top = 6.dp)) }
+        Text(status ?: "Where should it play?", style = MaterialTheme.typography.titleMedium, color = Ink, modifier = Modifier.padding(top = 14.dp))
+        Spacer(Modifier.height(18.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            val note = when { player == null -> "No Yoto found"; !player.online -> "Asleep: press its button"; else -> player.name }
+            WhereTile("On the Yoto", note, enabled = player != null && !busy, onClick = onYoto, modifier = Modifier.weight(1f)) { YotoIllustration(it) }
+            WhereTile("Here in the kitchen", "Plays on this speaker", enabled = !busy, onClick = onHere, modifier = Modifier.weight(1f)) { RecordIllustration(it) }
+        }
+        Spacer(Modifier.height(14.dp))
+        InkButton("Not now", onClick = onCancel, filled = false, modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun WhereTile(label: String, note: String, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, picture: @Composable (Modifier) -> Unit) {
+    val shape = RoundedCornerShape(20.dp)
+    Column(
+        modifier
+            .heightIn(min = 180.dp)
+            .clip(shape)
+            .border(BorderStroke(Rules.thin, Ink), shape)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        picture(Modifier.size(84.dp))
+        Spacer(Modifier.height(8.dp))
+        Text(label, style = MaterialTheme.typography.titleMedium, color = Ink)
+        Text(note, style = MaterialTheme.typography.bodySmall, color = Ink)
     }
 }
 

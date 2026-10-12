@@ -89,6 +89,26 @@ fun TvIllustration(modifier: Modifier = Modifier, ink: Color = Ink, paper: Color
     }
 }
 
+// The Yoto player: a rounded box with two knobs on top, a card standing in
+// its slot, and a pixel smile on the screen.
+@Composable
+fun YotoIllustration(modifier: Modifier = Modifier, ink: Color = Ink, paper: Color = Paper) {
+    Canvas(modifier) {
+        inBox {
+            val r = androidx.compose.ui.geometry.CornerRadius(3f)
+            drawRoundRect(ink, topLeft = Offset(16f, 14f), size = Size(14f, 14f), cornerRadius = r)
+            drawRoundRect(ink, topLeft = Offset(70f, 14f), size = Size(14f, 14f), cornerRadius = r)
+            drawRoundRect(ink, topLeft = Offset(38f, 4f), size = Size(24f, 26f), cornerRadius = r)
+            drawRect(paper, topLeft = Offset(42f, 9f), size = Size(16f, 3f))
+            drawRoundRect(ink, topLeft = Offset(10f, 24f), size = Size(80f, 68f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(14f))
+            drawRect(paper, topLeft = Offset(34f, 29f), size = Size(32f, 3f))
+            drawRoundRect(paper, topLeft = Offset(28f, 42f), size = Size(44f, 34f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f))
+            listOf(38f to 48f, 58f to 48f, 34f to 60f, 38f to 64f, 42f to 64f, 46f to 64f, 50f to 64f, 54f to 64f, 58f to 64f, 62f to 60f)
+                .forEach { (x, y) -> drawRect(ink, Offset(x, y), Size(4f, 4f)) }
+        }
+    }
+}
+
 @Composable
 fun BookIllustration(modifier: Modifier = Modifier, ink: Color = Ink, paper: Color = Paper) {
     Canvas(modifier) {

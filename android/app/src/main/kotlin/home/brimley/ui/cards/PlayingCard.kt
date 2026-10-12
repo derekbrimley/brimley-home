@@ -31,6 +31,7 @@ import home.brimley.ui.InkCard
 import home.brimley.ui.Pill
 import home.brimley.ui.RecordIllustration
 import home.brimley.ui.TvIllustration
+import home.brimley.ui.YotoIllustration
 import home.brimley.ui.theme.Ink
 import home.brimley.ui.theme.PaperBright
 import home.brimley.ui.theme.Rules
@@ -49,7 +50,7 @@ fun PlayingCard(
         val where = listOf(
             if (playing.any { it.target == "kitchen" || it.target == "podcast" }) "kitchen speaker" else "kitchen quiet",
             when { !tvSetUp -> "TV not set up"; playing.any { it.target == "tv" } -> "TV on"; else -> "TV off" },
-            playing.firstOrNull { it.target == "yoto" }?.let { "Yoto playing" } ?: "Yoto quiet",
+            playing.firstOrNull { it.target == "yoto" }?.let { if (it.isPlaying) "Yoto playing" else "Yoto paused" } ?: "Yoto quiet",
         ).joinToString(" · ")
         Box(Modifier.clickable(enabled = !tvSetUp, onClick = onSetUpTv)) { CardTitle("Playing", trailing = where) }
         Spacer(Modifier.height(12.dp))
@@ -84,6 +85,10 @@ private fun Controls(p: Playing, onControl: (String, String) -> Unit) {
                 RoundButton(filled = false, onClick = { onControl("tv", "voldown") }) { Label("−", it) }
                 RoundButton(filled = false, onClick = { onControl("tv", "volup") }) { Label("+", it) }
                 InkButton("TV off", onClick = { onControl("tv", "off") }, filled = false, modifier = Modifier.height(64.dp))
+            }
+            "yoto" -> {
+                RoundButton(filled = true, onClick = { onControl("yoto", if (p.isPlaying) "pause" else "resume") }) { if (p.isPlaying) PauseIcon(it) else PlayIcon(it) }
+                InkButton("Stop", onClick = { onControl("yoto", "stop") }, filled = false, modifier = Modifier.height(64.dp))
             }
         }
     }
@@ -166,6 +171,8 @@ private fun NowPlaying(p: Playing, big: Boolean, onControl: (String, String) -> 
                 AsyncImage(model = p.imageUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(coverSize))
             } else if (p.target == "tv") {
                 TvIllustration(Modifier.size(coverSize))
+            } else if (p.target == "yoto") {
+                YotoIllustration(Modifier.size(coverSize))
             } else {
                 RecordIllustration(Modifier.size(coverSize))
             }
@@ -179,10 +186,8 @@ private fun NowPlaying(p: Playing, big: Boolean, onControl: (String, String) -> 
                 when (p.target) { "kitchen", "podcast" -> "Kitchen speaker"; "tv" -> "Living room TV"; else -> "Yoto" },
                 filled = false,
             )
-            if (p.target != "yoto") {
-                Spacer(Modifier.height(10.dp))
-                Controls(p, onControl)
-            }
+            Spacer(Modifier.height(10.dp))
+            Controls(p, onControl)
         }
     }
 }

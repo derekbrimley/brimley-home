@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 data class PodcastNow(val episodeTitle: String, val showTitle: String, val imageUrl: String?, val isPlaying: Boolean)
 
-// One player for podcast episodes, out of whatever speaker the tablet is on.
+// One player for podcast episodes and Yoto cards played here, out of whatever speaker the tablet is on.
 // It takes audio focus, so Spotify on the tablet pauses while it plays.
 // Call from the main thread.
 class PodcastPlayer(context: Context) {
@@ -36,6 +36,15 @@ class PodcastPlayer(context: Context) {
     fun play(podcast: Podcast, episode: Episode, imageUrl: String?) {
         current = PodcastNow(episode.title, podcast.title, imageUrl ?: podcast.imageUrl, true)
         player.setMediaItem(MediaItem.fromUri(episode.audioUrl))
+        player.prepare()
+        player.play()
+        publish()
+    }
+
+    // A Yoto card's tracks, one after another.
+    fun playQueue(queue: StoryQueue) {
+        current = queue.now
+        player.setMediaItems(queue.urls.map { MediaItem.fromUri(it) })
         player.prepare()
         player.play()
         publish()
