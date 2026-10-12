@@ -212,11 +212,12 @@ export function toTracks(raw: RawContent): StoryTrack[] {
   return out;
 }
 
-// Where a card's audio might be. /content serves make-your-own cards; store
-// cards may live under /card. The first that answers wins.
+// Where a card's audio is. Store cards answer at /card (checked on the real
+// account; /content is 403 for them); /content may still serve make-your-own
+// cards. The first with playable tracks wins.
 export function trackPaths(cardId: string): string[] {
   const id = encodeURIComponent(cardId);
-  return [`/content/${id}?playable=true&signingType=s3`, `/card/${id}?playable=true&signingType=s3`, `/card/${id}`];
+  return [`/card/${id}?playable=true&signingType=s3`, `/content/${id}?playable=true&signingType=s3`];
 }
 
 export interface TrackAttempt { path: string; status: number; tracks: number; sample: string | null }
@@ -235,7 +236,7 @@ export async function fetchTracks(cardId: string): Promise<{ tracks: StoryTrack[
     tried.push({ path, status: res.status, tracks: tracks.length, sample: first ? first.slice(0, 40) : null });
     if (tracks.length) return { tracks, tried };
   }
-  if (tried.every((t) => t.status === 404)) throw new Error("Yoto has no audio for this card");
+  if (tried.every((t) => t.status >= 400)) throw new Error("Yoto has no audio for this card");
   return { tracks: [], tried };
 }
 

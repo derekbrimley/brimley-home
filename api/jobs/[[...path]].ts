@@ -7,6 +7,8 @@ import { localDateString } from "../../lib/time";
 
 // POST /api/jobs/done           { jobId, done, date? }   tick or untick a job
 // POST /api/jobs/bounty/claim   { row }                  "I did it" on a bounty
+//   (Vercel only routes one segment into this file; vercel.json rewrites
+//   bounty/claim to bounty-claim, and the function may see either URL.)
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).end();
   if (!authenticate(req.headers.authorization)) return res.status(401).json({ error: "Unauthorized" });
@@ -23,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ ok: true, date, jobId, done: body.done !== false });
   }
 
-  if (path.join("/") === "bounty/claim") {
+  if (path.join("/") === "bounty/claim" || path.join("/") === "bounty-claim") {
     const row = Number(body.row);
     if (!Number.isInteger(row) || row < 2) return res.status(400).json({ error: "row is required" });
     const sheet = await getSheetCache();

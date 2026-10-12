@@ -2,6 +2,7 @@
   "crons": [{ "path": "/api/cron/sync", "schedule": "0 9 * * *" }],
   "rewrites": [
     { "source": "/api/:group(cards|music|yoto)", "destination": "/api/:group/index" },
-    { "source": "/api/yoto/cards/:id", "destination": "/api/yoto/tracks?cardId=:id" }
+    { "source": "/api/yoto/cards/:id", "destination": "/api/yoto/tracks?cardId=:id" },
+    { "source": "/api/jobs/bounty/claim", "destination": "/api/jobs/bounty-claim" }
   ]
 }

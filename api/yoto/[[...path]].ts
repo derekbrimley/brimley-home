@@ -19,8 +19,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === "GET" && path.length === 0) return res.status(200).json(await fetchStories());
-    if (req.method === "GET" && path.join("/") === "tracks") {
-      const cardId = new URL(req.url ?? "/", "http://local").searchParams.get("cardId") ?? "";
+    // Reached as /api/yoto/tracks?cardId=, or as /api/yoto/cards/:id through the
+    // vercel.json rewrite (the function then sees the original URL).
+    const tracksFor = path.join("/") === "tracks"
+      ? new URL(req.url ?? "/", "http://local").searchParams.get("cardId")
+      : path.length === 2 && path[0] === "cards" ? path[1] : null;
+    if (req.method === "GET" && tracksFor !== null) {
+      const cardId = tracksFor;
       if (!CARD_ID.test(cardId)) return res.status(400).json({ error: "Bad card id" });
       return res.status(200).json(await fetchTracks(cardId));
     }

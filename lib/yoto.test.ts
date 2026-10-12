@@ -63,8 +63,8 @@ describe("pickPlayer", () => {
 });
 
 describe("trackPaths", () => {
-  it("tries /content first, then /card", () => {
-    expect(trackPaths("5JhmI")).toEqual(["/content/5JhmI?playable=true&signingType=s3", "/card/5JhmI?playable=true&signingType=s3", "/card/5JhmI"]);
+  it("tries /card first, then /content", () => {
+    expect(trackPaths("5JhmI")).toEqual(["/card/5JhmI?playable=true&signingType=s3", "/content/5JhmI?playable=true&signingType=s3"]);
   });
 });
 
