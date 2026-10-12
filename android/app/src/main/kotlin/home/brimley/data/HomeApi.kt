@@ -1,6 +1,7 @@
 package home.brimley.data
 
 import home.brimley.model.MusicShelf
+import home.brimley.model.Playing
 import home.brimley.model.Stories
 import home.brimley.model.StoryTrack
 import home.brimley.model.Today
@@ -39,6 +40,14 @@ class HomeApi(private val baseUrl: String, private val token: String) {
             val body = res.body?.string().orEmpty()
             if (!res.isSuccessful) throw ApiException("today ${res.code}")
             json.decodeFromString(Today.serializer(), body)
+        }
+    }
+
+    suspend fun playing(): List<Playing> = withContext(Dispatchers.IO) {
+        client.newCall(request("/api/playing").get().build()).execute().use { res ->
+            val body = res.body?.string().orEmpty()
+            if (!res.isSuccessful) throw ApiException("playing ${res.code}")
+            json.decodeFromString(PlayingResponse.serializer(), body).playing
         }
     }
 
@@ -112,3 +121,6 @@ private data class ShelvesResponse(val shelves: List<MusicShelf>)
 
 @Serializable
 private data class TracksResponse(val tracks: List<StoryTrack>)
+
+@Serializable
+private data class PlayingResponse(val playing: List<Playing>)

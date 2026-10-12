@@ -27,7 +27,8 @@ data class HomeState(
     val celebrateKid: String? = null,   // set for ~3s when a kid's last job is ticked
 )
 
-// One source of truth for the screen. Polls /api/today every minute, keeps the
+// One source of truth for the screen. Polls /api/today every minute (and
+// /api/playing every 15 s while the server reports something playing), keeps the
 // last good payload on disk so a reboot never shows a blank dashboard, and
 // applies job ticks optimistically so the checkbox never lags the finger.
 class TodayRepository(private val api: HomeApi, cacheDir: File, private val waker: SpotifyWaker? = null) {
@@ -35,6 +36,7 @@ class TodayRepository(private val api: HomeApi, cacheDir: File, private val wake
     private val cacheFile = File(cacheDir, "today.json")
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
     private var poller: Job? = null
+    private var playingPoller: Job? = null
 
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state
@@ -46,7 +48,7 @@ class TodayRepository(private val api: HomeApi, cacheDir: File, private val wake
         }
     }
 
-    fun start(intervalMs: Long = 60_000) {
+    fun start(intervalMs: Long = 60_000, playingIntervalMs: Long = 15_000) {
         if (poller?.isActive == true || !api.isConfigured) return
         poller = scope.launch {
             while (isActive) {
@@ -54,9 +56,23 @@ class TodayRepository(private val api: HomeApi, cacheDir: File, private val wake
                 delay(intervalMs)
             }
         }
+        // A pause at the Yoto's button or in the Spotify app shows within ~15 s
+        // instead of a minute. Idle when nothing plays, so it costs nothing then.
+        playingPoller = scope.launch {
+            while (isActive) {
+                delay(playingIntervalMs)
+                if (_state.value.today?.playing?.isNotEmpty() == true) refreshPlaying()
+            }
+        }
     }
 
-    fun stop() { poller?.cancel(); poller = null }
+    fun stop() { poller?.cancel(); poller = null; playingPoller?.cancel(); playingPoller = null }
+
+    private suspend fun refreshPlaying() {
+        runCatching { api.playing() }.onSuccess { playing ->
+            _state.update { s -> s.today?.let { s.copy(today = it.copy(playing = playing)) } ?: s }
+        }
+    }
 
     suspend fun refresh() {
         if (!api.isConfigured) return

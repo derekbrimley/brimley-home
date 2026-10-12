@@ -6,7 +6,7 @@ import { buildJobsBlocks } from "./jobs";
 import { getCardRows, getCatalogRows, getCompletions, getSheetCache, setSheetCache, upsertCatalogRow } from "./queries";
 import { fetchSheet, serviceLabelFor, writeWatchResult, type SheetData } from "./sheet";
 import { addDays, localDateString, localWeekday, weekStart } from "./time";
-import type { Today, TodayEvent } from "./types";
+import type { Playing, Today, TodayEvent } from "./types";
 import { fetchWeather } from "./weather";
 import { fetchYotoPlaying } from "./yoto";
 
@@ -106,6 +106,17 @@ export async function syncCatalog(sheet: SheetData, opts: SyncOptions = {}): Pro
   return [...existing.values()].filter((r) => keys.has(r.source_key));
 }
 
+// What the server can see playing: the kitchen (Spotify, through Crate) and the
+// Yoto. /api/today includes it; /api/playing serves it alone, for the tablet's
+// quick refresh while something is playing.
+export async function fetchPlaying(warnings: string[]): Promise<Playing[]> {
+  const [kitchen, yoto] = await Promise.all([
+    settle("crate", fetchKitchenPlaying(), warnings),
+    settle("yoto", fetchYotoPlaying(), warnings),
+  ]);
+  return [kitchen, yoto].filter((p) => p !== null);
+}
+
 export async function buildToday(now = new Date()): Promise<Today> {
   const tz = process.env.HOME_TZ ?? "America/Denver";
   const date = localDateString(now, tz);
@@ -119,14 +130,13 @@ export async function buildToday(now = new Date()): Promise<Today> {
   }
 
   const dayStart = new Date(`${date}T00:00:00`);
-  const [weather, eventsRaw, completions, cardRows, catalogRows, kitchen, yotoPlaying] = await Promise.all([
+  const [weather, eventsRaw, completions, cardRows, catalogRows, playing] = await Promise.all([
     settle("weather", process.env.HOME_LATLON ? fetchWeather(process.env.HOME_LATLON, tz) : Promise.resolve(null), warnings),
     settle("calendar", fetchEvents(isoAtLocal(date, "00:00", tz), isoAtLocal(addDays(date, 2), "00:00", tz)), warnings),
     settle("jobs", getCompletions(weekStart(date, weekday), date), warnings),
     settle("cards", getCardRows(), warnings),
     sheet ? settle("catalog", syncCatalog(sheet), warnings) : Promise.resolve(null),
-    settle("crate", fetchKitchenPlaying(), warnings),
-    settle("yoto", fetchYotoPlaying(), warnings),
+    fetchPlaying(warnings),
   ]);
   void dayStart;
 
@@ -144,7 +154,7 @@ export async function buildToday(now = new Date()): Promise<Today> {
     tomorrowFirst,
     jobs: sheet ? buildJobsBlocks(sheet.jobs, sheet.bounties, completions ?? new Set(), date, tz, now) : [],
     cards: cardRows ? activeCards(cardRows, now.toISOString()) : [],
-    playing: [kitchen, yotoPlaying].filter((p) => p !== null),
+    playing,
     catalog: catalogRows && sheet ? toCatalogItems(catalogRows, sheet.services) : [],
     makes: sheet ? sheet.makes.map((m) => ({ title: m.title, who: m.who || null, link: m.link || null, imageUrl: m.imageUrl || null })) : [],
     warnings,

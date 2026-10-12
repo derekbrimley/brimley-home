@@ -33,6 +33,7 @@ Routes (all take `Authorization: Bearer <token>` from `HOME_API_TOKENS`):
 | Route | What |
 |---|---|
 | `GET /api/today` | Everything the home screen shows, assembled server-side |
+| `GET /api/playing` | Just what is playing (kitchen and Yoto); the tablet polls it every 15 s while something plays |
 | `POST /api/jobs/done` | `{ jobId, done }` tick or untick a job for today |
 | `POST /api/jobs/bounty/claim` | `{ row }` "I did it" on a bounty; writes `waiting` into the sheet |
 | `GET/POST /api/cards`, `DELETE /api/cards/:id` | Day cards |
