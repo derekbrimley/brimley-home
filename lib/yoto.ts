@@ -212,9 +212,31 @@ export function toTracks(raw: RawContent): StoryTrack[] {
   return out;
 }
 
-export async function fetchTracks(cardId: string): Promise<StoryTrack[]> {
+// Where a card's audio might be. /content serves make-your-own cards; store
+// cards may live under /card. The first that answers wins.
+export function trackPaths(cardId: string): string[] {
+  const id = encodeURIComponent(cardId);
+  return [`/content/${id}?playable=true&signingType=s3`, `/card/${id}?playable=true&signingType=s3`, `/card/${id}`];
+}
+
+export interface TrackAttempt { path: string; status: number; tracks: number; sample: string | null }
+
+// `tried` says which places answered and what the first track URL looked like
+// (cut short), so a card that won't play here can be explained.
+export async function fetchTracks(cardId: string): Promise<{ tracks: StoryTrack[]; tried: TrackAttempt[] }> {
   const token = await accessToken();
-  return toTracks(await yoto<RawContent>(`/content/${encodeURIComponent(cardId)}?playable=true&signingType=s3`, token, 10000));
+  const tried: TrackAttempt[] = [];
+  for (const path of trackPaths(cardId)) {
+    const res = await timedFetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } }, 10000);
+    if (!res.ok) { tried.push({ path: path.split("?")[0], status: res.status, tracks: 0, sample: null }); continue; }
+    const raw = (await res.json()) as RawContent;
+    const tracks = toTracks(raw);
+    const first = raw.card?.content?.chapters?.[0]?.tracks?.[0]?.trackUrl ?? null;
+    tried.push({ path, status: res.status, tracks: tracks.length, sample: first ? first.slice(0, 40) : null });
+    if (tracks.length) return { tracks, tried };
+  }
+  if (tried.every((t) => t.status === 404)) throw new Error("Yoto has no audio for this card");
+  return { tracks: [], tried };
 }
 
 // ── what the player is doing ─────────────────────────────────────────────────

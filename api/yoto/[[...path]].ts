@@ -4,7 +4,7 @@ import { subPath } from "../../lib/route";
 import { fetchStories, fetchTracks, sendToYoto, type YotoAction } from "../../lib/yoto";
 
 // GET  /api/yoto                 { cards, player }  the family's Yoto cards; is the player awake
-// GET  /api/yoto/cards/:id       { tracks }         signed audio URLs, to play a card on the tablet
+// GET  /api/yoto/cards/:id       { tracks, tried }  signed audio URLs, to play a card on the tablet
 // POST /api/yoto/play            { cardId }         start a card on the Yoto player
 // POST /api/yoto/control         { action }         pause | resume | stop
 export const config = { maxDuration: 20 };
@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === "GET" && path.length === 0) return res.status(200).json(await fetchStories());
     if (req.method === "GET" && path.length === 2 && path[0] === "cards") {
       if (!CARD_ID.test(path[1])) return res.status(400).json({ error: "Bad card id" });
-      return res.status(200).json({ tracks: await fetchTracks(path[1]) });
+      return res.status(200).json(await fetchTracks(path[1]));
     }
     if (req.method === "POST" && path.join("/") === "play") {
       const cardId = typeof body.cardId === "string" ? body.cardId : "";

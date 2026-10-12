@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commandFor, needsRefresh, nextNow, parseEvents, pickAuth, pickPlayer, resolveYoto, seedOf, toAuth, toStoryCards, toTracks, toYotoPlaying, type StoryCard } from "./yoto";
+import { commandFor, needsRefresh, nextNow, parseEvents, pickAuth, pickPlayer, resolveYoto, trackPaths, seedOf, toAuth, toStoryCards, toTracks, toYotoPlaying, type StoryCard } from "./yoto";
 
 describe("pickAuth", () => {
   const stored = { refreshToken: "rotated-2", accessToken: "a", expiresAt: 5_000_000, seed: seedOf("first") };
@@ -59,6 +59,12 @@ describe("pickPlayer", () => {
   it("falls back to the first player, and to null with none", () => {
     expect(pickPlayer({ devices: [{ deviceId: "y1", online: false }] }, undefined)?.name).toBe("Yoto");
     expect(pickPlayer({}, undefined)).toBeNull();
+  });
+});
+
+describe("trackPaths", () => {
+  it("tries /content first, then /card", () => {
+    expect(trackPaths("5JhmI")).toEqual(["/content/5JhmI?playable=true&signingType=s3", "/card/5JhmI?playable=true&signingType=s3", "/card/5JhmI"]);
   });
 });
 
