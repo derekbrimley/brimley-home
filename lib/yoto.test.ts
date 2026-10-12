@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commandFor, needsRefresh, nextNow, parseEvents, pickAuth, pickPlayer, resolveYoto, trackPaths, seedOf, toAuth, toStoryCards, toTracks, toYotoPlaying, type StoryCard } from "./yoto";
+import { commandFor, needsRefresh, nextNow, nextPausedSeen, parseEvents, pickAuth, pickPlayer, resolveYoto, trackPaths, seedOf, toAuth, toStoryCards, toTracks, toYotoPlaying, type StoryCard } from "./yoto";
 
 describe("pickAuth", () => {
   const stored = { refreshToken: "rotated-2", accessToken: "a", expiresAt: 5_000_000, seed: seedOf("first") };
@@ -104,9 +104,11 @@ describe("resolveYoto / toYotoPlaying", () => {
     expect(resolveYoto(live("c1", "paused"), ourPause, t0)?.playing).toBe(false);
     expect(resolveYoto(live("c1", "paused"), { ...ourPause, at: t0 - 31 * 60_000 }, t0)).toBeNull();
   });
-  it("treats a pause at the player (its button) as stopped", () => {
+  it("shows a pause at the player's button for ten minutes, then counts it as stopped", () => {
+    expect(resolveYoto(live("c1", "paused"), null, t0, t0 - 60_000)?.playing).toBe(false);
+    expect(resolveYoto(live("c1", "paused"), { cardId: "c1", playing: true, at: t0 - 60_000 }, t0, t0 - 9 * 60_000)?.playing).toBe(false);
+    expect(resolveYoto(live("c1", "paused"), null, t0, t0 - 11 * 60_000)).toBeNull();
     expect(resolveYoto(live("c1", "paused"), null, t0)).toBeNull();
-    expect(resolveYoto(live("c1", "paused"), { cardId: "c1", playing: true, at: t0 - 60_000 }, t0)).toBeNull();
   });
   it("shows nothing once stopped or with no card", () => {
     expect(resolveYoto(live("c1", "stopped"), null, t0)).toBeNull();
@@ -144,3 +146,20 @@ describe("commandFor / nextNow", () => {
   });
 });
 
+
+describe("nextPausedSeen", () => {
+  const live = (cardId: string | null, playbackStatus: string | null) => ({ cardId, playbackStatus, chapterTitle: null });
+  it("starts the clock when a card is first seen paused, and keeps it", () => {
+    const first = nextPausedSeen(live("c1", "paused"), null, 100);
+    expect(first).toEqual({ cardId: "c1", since: 100 });
+    expect(nextPausedSeen(live("c1", "paused"), first, 500)).toBe(first);
+  });
+  it("restarts for a different card and clears once playing or stopped", () => {
+    expect(nextPausedSeen(live("c2", "paused"), { cardId: "c1", since: 100 }, 500)).toEqual({ cardId: "c2", since: 500 });
+    expect(nextPausedSeen(live("c1", "playing"), { cardId: "c1", since: 100 }, 500)).toBeNull();
+    expect(nextPausedSeen(live("none", "paused"), { cardId: "c1", since: 100 }, 500)).toBeNull();
+  });
+  it("leaves the clock alone when the player doesn't answer", () => {
+    expect(nextPausedSeen(null, { cardId: "c1", since: 100 }, 500)).toEqual({ cardId: "c1", since: 100 });
+  });
+});

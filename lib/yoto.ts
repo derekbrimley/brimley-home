@@ -264,17 +264,31 @@ const COMMAND_SETTLE_MS = 15_000;
 // With no word from the player, believe our last command this long.
 const NO_ANSWER_TRUST_MS = 3 * 60 * 60 * 1000;
 // A pause from the tablet keeps the entry (so it can be resumed) this long.
-// A pause at the player itself is how a kid "stops" it, so that one is quiet.
 const OUR_PAUSE_SHOWS_MS = 30 * 60 * 1000;
+// A pause at the player's button shows as paused this long, then counts as
+// stopped (it's also how a kid stops it). The player doesn't say when it
+// paused, so `pausedSince` is when we first saw it paused (kv.yoto_paused).
+const PLAYER_PAUSE_SHOWS_MS = 10 * 60 * 1000;
 
-export function resolveYoto(live: LiveEvents | null, ours: YotoNow | null, now: number): { cardId: string; playing: boolean; chapter: string | null } | null {
+export interface PausedSeen { cardId: string; since: number }
+
+// Track when the player was first seen paused on its current card.
+export function nextPausedSeen(live: LiveEvents | null, prev: PausedSeen | null, now: number): PausedSeen | null {
+  if (!live) return prev;
+  const cardId = live.cardId && live.cardId !== "none" ? live.cardId : null;
+  if (live.playbackStatus !== "paused" || !cardId) return null;
+  return prev && prev.cardId === cardId ? prev : { cardId, since: now };
+}
+
+export function resolveYoto(live: LiveEvents | null, ours: YotoNow | null, now: number, pausedSince: number | null = null): { cardId: string; playing: boolean; chapter: string | null } | null {
   const settling = ours !== null && now - ours.at < COMMAND_SETTLE_MS;
   if (live && !settling) {
     const cardId = live.cardId && live.cardId !== "none" ? live.cardId : null;
     if (!cardId || (live.playbackStatus !== "playing" && live.playbackStatus !== "paused")) return null;
     if (live.playbackStatus === "paused") {
       const ourPause = ours !== null && ours.cardId === cardId && !ours.playing && now - ours.at < OUR_PAUSE_SHOWS_MS;
-      if (!ourPause) return null;
+      const recentPause = pausedSince !== null && now - pausedSince < PLAYER_PAUSE_SHOWS_MS;
+      if (!ourPause && !recentPause) return null;
     }
     return { cardId, playing: live.playbackStatus === "playing", chapter: live.chapterTitle };
   }
@@ -282,8 +296,8 @@ export function resolveYoto(live: LiveEvents | null, ours: YotoNow | null, now: 
   return null;
 }
 
-export function toYotoPlaying(live: LiveEvents | null, ours: YotoNow | null, cards: StoryCard[], now: number): Playing | null {
-  const r = resolveYoto(live, ours, now);
+export function toYotoPlaying(live: LiveEvents | null, ours: YotoNow | null, cards: StoryCard[], now: number, pausedSince: number | null = null): Playing | null {
+  const r = resolveYoto(live, ours, now, pausedSince);
   if (!r) return null;
   const card = cards.find((c) => c.id === r.cardId);
   return { target: "yoto", title: card?.title ?? "A Yoto card", subtitle: r.chapter ?? card?.author ?? null, imageUrl: card?.imageUrl ?? null, isPlaying: r.playing, positionMs: null, durationMs: null };
@@ -303,7 +317,11 @@ export async function fetchYotoPlaying(): Promise<Playing | null> {
     const me = players ? listPlayers(players).find((p) => p.id === lib.playerId) : undefined;
     if (players && !me?.online) return null;
   }
-  return toYotoPlaying(live, ours, lib.cards, Date.now());
+  const now = Date.now();
+  const prevPaused = await getKv<PausedSeen>("yoto_paused");
+  const paused = nextPausedSeen(live, prevPaused, now);
+  if (JSON.stringify(paused) !== JSON.stringify(prevPaused)) await setKv("yoto_paused", paused);
+  return toYotoPlaying(live, ours, lib.cards, now, paused?.since ?? null);
 }
 
 // ── commands ─────────────────────────────────────────────────────────────────
@@ -379,7 +397,10 @@ export async function sendToYoto(cmd: YotoCommand): Promise<{ player: string }> 
   let current: string | null = null;
   if (cmd.action === "pause" || cmd.action === "resume") {
     const [live, ours] = await Promise.all([askEvents(player.id, token).catch(() => null), getKv<YotoNow>("yoto_now")]);
-    current = resolveYoto(live, ours, Date.now())?.cardId ?? null;
+    // The card the player itself reports wins (it may have been paused at its
+    // button, which resolveYoto can hide); else whatever we last started.
+    const liveCard = live?.cardId && live.cardId !== "none" ? live.cardId : null;
+    current = liveCard ?? resolveYoto(live, ours, Date.now())?.cardId ?? ours?.cardId ?? null;
   }
   const { topic, payload } = commandFor(player.id, cmd);
   await publish(player.id, token, topic, payload);
