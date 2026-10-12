@@ -10,12 +10,12 @@ built yet; it exists so the build has a shape to argue with.
 - **Visual direction: Woodcut shapes, Fredoka type** (`docs/round-3.html`). Four cards
   of different sizes: Today (largest, top left), Playing (top right, one card for
   music, TV and stories), Jobs (bottom left, with the bounty row when one is posted),
-  Note (bottom right, with "Draw a note" and "Our makes"). Black band on top, read-only
+  Note (bottom right: the drawing fills it; tap it or the round pencil to draw). Black band on top, read-only
   day-card footer. Rounded corners, thick rules, solid-silhouette illustrations.
 - **One picker.** "Play something" has three tabs: Music (Crate shelves), Watch (Shows,
   Movies, Videos, Listen), Stories (Yoto cards). The tab decides where it plays.
-- **Bounty board and Our makes are in.** Bounties appear only while posted; makes live
-  behind a button.
+- **Bounty board and Our makes are in.** Bounties appear only while posted; makes will live
+  behind the Note card (tap it to open the Fridge: the note, older notes, our makes).
 - **Hardware:** the family owns both a dongle Chromecast and a Chromecast with Google
   TV; recommendation is to put the Google TV one back (see TV). The DC-1 has the Play
   Store and Google services. One shared Google calendar. A Yoto player plus the Yoto app.
