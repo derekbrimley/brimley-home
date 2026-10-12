@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commandAnswer, commandFor, needsRefresh, nextNow, pickAuth, pickPlayer, resolveNow, seedOf, toAuth, toStoryCards, toTracks, toYotoPlaying, type StoryCard } from "./yoto";
+import { commandFor, needsRefresh, nextNow, pickAuth, pickPlayer, resolveNow, seedOf, toAuth, toStoryCards, toTracks, toYotoPlaying, type StoryCard } from "./yoto";
 
 describe("pickAuth", () => {
   const stored = { refreshToken: "rotated-2", accessToken: "a", expiresAt: 5_000_000, seed: seedOf("first") };
@@ -116,13 +116,3 @@ describe("commandFor / nextNow", () => {
   });
 });
 
-describe("commandAnswer", () => {
-  it("reads the player's answer for the command's resource", () => {
-    expect(commandAnswer('{"status":{"card":"OK","req_body":"…"}}', "card")).toBe("OK");
-    expect(commandAnswer('{"status":{"card":"FAIL"}}', "card")).toBe("FAIL");
-  });
-  it("ignores answers to other commands and junk", () => {
-    expect(commandAnswer('{"status":{"volume":"OK"}}', "card")).toBeNull();
-    expect(commandAnswer("not json", "card")).toBeNull();
-  });
-});

@@ -268,24 +268,9 @@ export function nextNow(cmd: YotoCommand, current: string | null, now: number): 
 }
 
 // Loaded on demand so /api/today's cold start doesn't pay for the MQTT client.
-// The player answers each command on device/{id}/response with
-// { status: { card: "OK" | "FAIL", … } }. Null when this reply says nothing
-// about the command we sent.
-export function commandAnswer(raw: string, resource: string): "OK" | "FAIL" | string | null {
-  try {
-    const status = (JSON.parse(raw) as { status?: Record<string, unknown> }).status;
-    const v = status?.[resource];
-    return typeof v === "string" ? v : null;
-  } catch {
-    return null;
-  }
-}
-
-const ANSWER_WAIT_MS = 4000;
-
-// Connect, listen for the player's answer, publish, wait briefly for it.
-// Returns the answer, or null if the player said nothing in time.
-async function publish(playerId: string, token: string, topic: string, payload: string): Promise<string | null> {
+// Fire and forget: the player doesn't answer on device/{id}/response for
+// these commands (checked on the real Yoto), so there is nothing to wait for.
+async function publish(playerId: string, token: string, topic: string, payload: string): Promise<void> {
   const { connectAsync } = await import("mqtt");
   const client = await connectAsync(BROKER, {
     clientId: `BRIMLEY${playerId}${randomUUID()}`.replace(/[^A-Za-z0-9]/g, ""),
@@ -294,24 +279,14 @@ async function publish(playerId: string, token: string, topic: string, payload: 
     reconnectPeriod: 0,
     connectTimeout: 8000,
   });
-  const resource = topic.split("/")[3];
   try {
-    const answered = new Promise<string | null>((resolve) => {
-      const timer = setTimeout(() => resolve(null), ANSWER_WAIT_MS);
-      client.on("message", (_t, buf) => {
-        const answer = commandAnswer(buf.toString(), resource);
-        if (answer !== null) { clearTimeout(timer); resolve(answer); }
-      });
-    });
-    await client.subscribeAsync(`device/${playerId}/response`, { qos: 1 });
     await client.publishAsync(topic, payload, { qos: 1 });
-    return await answered;
   } finally {
     await client.endAsync();
   }
 }
 
-export async function sendToYoto(cmd: YotoCommand): Promise<{ player: string; answer: string | null }> {
+export async function sendToYoto(cmd: YotoCommand): Promise<{ player: string }> {
   const token = await accessToken();
   const player = pickPlayer(await yoto<RawDevices>("/device-v2/devices/mine", token), process.env.YOTO_DEVICE_ID);
   if (!player) throw new Error("There's no Yoto player on this account");
@@ -325,9 +300,7 @@ export async function sendToYoto(cmd: YotoCommand): Promise<{ player: string; an
     current = resolveNow(status, ours)?.cardId ?? null;
   }
   const { topic, payload } = commandFor(player.id, cmd);
-  const answer = await publish(player.id, token, topic, payload);
-  if (answer !== null && answer !== "OK") throw new Error(`The Yoto said no (${answer})`);
-  if (answer === null) console.log(JSON.stringify({ yoto: "no answer", topic }));
+  await publish(player.id, token, topic, payload);
   await setKv("yoto_now", nextNow(cmd, current, Date.now()));
-  return { player: player.name, answer };
+  return { player: player.name };
 }
