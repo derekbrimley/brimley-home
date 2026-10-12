@@ -1,6 +1,6 @@
-// Stories come from Yoto: the family's card library and the player's status
-// over REST, commands over MQTT (AWS IoT, websockets, one short session per
-// command). Yoto rotates refresh tokens, so the current one lives in kv, and
+// Stories come from Yoto: the family's card library over REST; commands and
+// the player's live state over MQTT (AWS IoT, websockets, one short session
+// each). Yoto's REST status answers 403 to third-party apps. Yoto rotates refresh tokens, so the current one lives in kv, and
 // the access token is cached beside it so refreshes stay rare.
 import { createHash, randomUUID } from "crypto";
 import { getKv, setKv } from "./queries";
@@ -174,19 +174,17 @@ async function library(token: string, force = false): Promise<CachedLibrary> {
 
 // GET /api/yoto: the cards, and whether the player is awake right now.
 // `players` lists every player, for picking YOTO_DEVICE_ID; the tablet ignores it.
-// `debug` carries what /api/today's Yoto entry is built from (the player's
-// raw status, our last command, the cached player id); the tablet ignores it.
+// `debug` carries what /api/today's Yoto entry is built from (what the player
+// says over MQTT, our last command, the cached player id); the tablet ignores it.
 export async function fetchStories(): Promise<{ cards: StoryCard[]; player: YotoPlayer | null; players: YotoPlayer[]; debug: unknown }> {
   const token = await accessToken();
   const [lib, devices, ours] = await Promise.all([library(token), yoto<RawDevices>("/device-v2/devices/mine", token), getKv<YotoNow>("yoto_now")]);
-  const status = lib.playerId
-    ? await yoto<unknown>(`/device-v2/${encodeURIComponent(lib.playerId)}/status`, token, 6000).catch((e: Error) => ({ error: e.message }))
-    : null;
+  const live = lib.playerId ? await askEvents(lib.playerId, token).catch((e: Error) => ({ error: e.message })) : null;
   return {
     cards: lib.cards,
     player: pickPlayer(devices, process.env.YOTO_DEVICE_ID),
     players: listPlayers(devices),
-    debug: { cachedPlayerId: lib.playerId, ours, status, now: new Date().toISOString() },
+    debug: { cachedPlayerId: lib.playerId, ours, live, now: new Date().toISOString() },
   };
 }
 
@@ -221,28 +219,44 @@ export async function fetchTracks(cardId: string): Promise<StoryTrack[]> {
 
 // ── what the player is doing ─────────────────────────────────────────────────
 
-// Written by our own commands. The REST status only refreshes every few
-// minutes and never says paused, so a command we just sent beats it.
+// Written by our own commands, for when the player doesn't answer.
 export interface YotoNow { cardId: string | null; playing: boolean; at: number }
 
-export interface RawStatus { activeCard?: string; isOnline?: boolean; updatedAt?: string }
+// What the player says on device/{id}/data/events when asked.
+export interface LiveEvents { cardId: string | null; playbackStatus: string | null; chapterTitle: string | null }
 
-// What the player is on, from the newer of its status and our last command.
-export function resolveNow(status: RawStatus, ours: YotoNow | null): { cardId: string; playing: boolean } | null {
-  if (status.isOnline === false) return null;
-  const updated = Date.parse(status.updatedAt ?? "") || 0;
-  const shadowCard = status.activeCard && status.activeCard !== "none" ? status.activeCard : null;
-  const now = ours && ours.at >= updated
-    ? { cardId: ours.cardId, playing: ours.playing }
-    : { cardId: shadowCard, playing: ours && ours.cardId === shadowCard ? ours.playing : true };
-  return now.cardId ? { cardId: now.cardId, playing: now.playing } : null;
+export function parseEvents(raw: string): LiveEvents | null {
+  try {
+    const body = JSON.parse(raw) as Record<string, unknown>;
+    const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+    const e = { cardId: str(body.cardId), playbackStatus: str(body.playbackStatus), chapterTitle: str(body.chapterTitle) };
+    return e.cardId || e.playbackStatus ? e : null;
+  } catch {
+    return null;
+  }
 }
 
-export function toYotoPlaying(status: RawStatus, ours: YotoNow | null, cards: StoryCard[]): Playing | null {
-  const now = resolveNow(status, ours);
-  if (!now) return null;
-  const card = cards.find((c) => c.id === now.cardId);
-  return { target: "yoto", title: card?.title ?? "A Yoto card", subtitle: card?.author ?? null, imageUrl: card?.imageUrl ?? null, isPlaying: now.playing, positionMs: null, durationMs: null };
+// A command we just sent beats a reply that may have left before it landed.
+const COMMAND_SETTLE_MS = 15_000;
+// With no word from the player, believe our last command this long.
+const NO_ANSWER_TRUST_MS = 3 * 60 * 60 * 1000;
+
+export function resolveYoto(live: LiveEvents | null, ours: YotoNow | null, now: number): { cardId: string; playing: boolean; chapter: string | null } | null {
+  const settling = ours !== null && now - ours.at < COMMAND_SETTLE_MS;
+  if (live && !settling) {
+    const cardId = live.cardId && live.cardId !== "none" ? live.cardId : null;
+    if (!cardId || (live.playbackStatus !== "playing" && live.playbackStatus !== "paused")) return null;
+    return { cardId, playing: live.playbackStatus === "playing", chapter: live.chapterTitle };
+  }
+  if (ours?.cardId && now - ours.at < NO_ANSWER_TRUST_MS) return { cardId: ours.cardId, playing: ours.playing, chapter: null };
+  return null;
+}
+
+export function toYotoPlaying(live: LiveEvents | null, ours: YotoNow | null, cards: StoryCard[], now: number): Playing | null {
+  const r = resolveYoto(live, ours, now);
+  if (!r) return null;
+  const card = cards.find((c) => c.id === r.cardId);
+  return { target: "yoto", title: card?.title ?? "A Yoto card", subtitle: r.chapter ?? card?.author ?? null, imageUrl: card?.imageUrl ?? null, isPlaying: r.playing, positionMs: null, durationMs: null };
 }
 
 export async function fetchYotoPlaying(): Promise<Playing | null> {
@@ -250,11 +264,8 @@ export async function fetchYotoPlaying(): Promise<Playing | null> {
   const token = await accessToken();
   const lib = await library(token);
   if (!lib.playerId) return null;
-  const [status, ours] = await Promise.all([
-    yoto<RawStatus>(`/device-v2/${encodeURIComponent(lib.playerId)}/status`, token, 6000),
-    getKv<YotoNow>("yoto_now"),
-  ]);
-  return toYotoPlaying(status, ours, lib.cards);
+  const [live, ours] = await Promise.all([askEvents(lib.playerId, token).catch(() => null), getKv<YotoNow>("yoto_now")]);
+  return toYotoPlaying(live, ours, lib.cards, Date.now());
 }
 
 // ── commands ─────────────────────────────────────────────────────────────────
@@ -277,10 +288,11 @@ export function nextNow(cmd: YotoCommand, current: string | null, now: number): 
   }
 }
 
-// Loaded on demand so /api/today's cold start doesn't pay for the MQTT client.
-// Fire and forget: the player doesn't answer on device/{id}/response for
-// these commands (checked on the real Yoto), so there is nothing to wait for.
-async function publish(playerId: string, token: string, topic: string, payload: string): Promise<void> {
+type Mqtt = Awaited<ReturnType<typeof import("mqtt")["connectAsync"]>>;
+
+// One short MQTT session. mqtt is loaded on demand so cold starts that never
+// talk to the player don't pay for it.
+async function session<T>(playerId: string, token: string, run: (client: Mqtt) => Promise<T>): Promise<T> {
   const { connectAsync } = await import("mqtt");
   const client = await connectAsync(BROKER, {
     clientId: `BRIMLEY${playerId}${randomUUID()}`.replace(/[^A-Za-z0-9]/g, ""),
@@ -290,10 +302,35 @@ async function publish(playerId: string, token: string, topic: string, payload: 
     connectTimeout: 8000,
   });
   try {
-    await client.publishAsync(topic, payload, { qos: 1 });
+    return await run(client);
   } finally {
     await client.endAsync();
   }
+}
+
+// Fire and forget: the player doesn't answer commands on device/{id}/response
+// (checked on the real Yoto).
+async function publish(playerId: string, token: string, topic: string, payload: string): Promise<void> {
+  await session(playerId, token, (client) => client.publishAsync(topic, payload, { qos: 1 }).then(() => undefined));
+}
+
+const EVENTS_WAIT_MS = 2500;
+
+// Ask the player what it is playing. Null if it doesn't answer in time
+// (asleep, or offline).
+async function askEvents(playerId: string, token: string): Promise<LiveEvents | null> {
+  return session(playerId, token, async (client) => {
+    const answered = new Promise<LiveEvents | null>((resolve) => {
+      const timer = setTimeout(() => resolve(null), EVENTS_WAIT_MS);
+      client.on("message", (_topic, buf) => {
+        const e = parseEvents(buf.toString());
+        if (e) { clearTimeout(timer); resolve(e); }
+      });
+    });
+    await client.subscribeAsync(`device/${playerId}/data/events`, { qos: 0 });
+    await client.publishAsync(`device/${playerId}/command/events/request`, "", { qos: 0 });
+    return answered;
+  });
 }
 
 export async function sendToYoto(cmd: YotoCommand): Promise<{ player: string }> {
@@ -303,11 +340,8 @@ export async function sendToYoto(cmd: YotoCommand): Promise<{ player: string }> 
   if (!player.online) throw new Error("The Yoto is asleep. Press its button, then try again");
   let current: string | null = null;
   if (cmd.action === "pause" || cmd.action === "resume") {
-    const [status, ours] = await Promise.all([
-      yoto<RawStatus>(`/device-v2/${encodeURIComponent(player.id)}/status`, token, 6000).catch(() => ({}) as RawStatus),
-      getKv<YotoNow>("yoto_now"),
-    ]);
-    current = resolveNow(status, ours)?.cardId ?? null;
+    const [live, ours] = await Promise.all([askEvents(player.id, token).catch(() => null), getKv<YotoNow>("yoto_now")]);
+    current = resolveYoto(live, ours, Date.now())?.cardId ?? null;
   }
   const { topic, payload } = commandFor(player.id, cmd);
   await publish(player.id, token, topic, payload);

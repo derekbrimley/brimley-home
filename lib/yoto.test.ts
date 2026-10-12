@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commandFor, needsRefresh, nextNow, pickAuth, pickPlayer, resolveNow, seedOf, toAuth, toStoryCards, toTracks, toYotoPlaying, type StoryCard } from "./yoto";
+import { commandFor, needsRefresh, nextNow, parseEvents, pickAuth, pickPlayer, resolveYoto, seedOf, toAuth, toStoryCards, toTracks, toYotoPlaying, type StoryCard } from "./yoto";
 
 describe("pickAuth", () => {
   const stored = { refreshToken: "rotated-2", accessToken: "a", expiresAt: 5_000_000, seed: seedOf("first") };
@@ -74,30 +74,44 @@ describe("toTracks", () => {
   });
 });
 
-describe("resolveNow / toYotoPlaying", () => {
+describe("parseEvents", () => {
+  it("reads the card, the playback state and the chapter", () => {
+    expect(parseEvents('{"cardId":"c1","playbackStatus":"playing","chapterTitle":"Chapter 2","volume":8}')).toEqual({ cardId: "c1", playbackStatus: "playing", chapterTitle: "Chapter 2" });
+  });
+  it("ignores replies that say nothing about playback, and junk", () => {
+    expect(parseEvents('{"volume":8}')).toBeNull();
+    expect(parseEvents("not json")).toBeNull();
+  });
+});
+
+describe("resolveYoto / toYotoPlaying", () => {
   const cards: StoryCard[] = [{ id: "c1", title: "The Gruffalo", author: "Julia Donaldson", imageUrl: "g.jpg" }];
-  const t0 = Date.parse("2026-10-11T10:00:00Z");
-  it("shows the status's card as playing when we sent nothing", () => {
-    expect(toYotoPlaying({ activeCard: "c1", isOnline: true, updatedAt: "2026-10-11T10:00:00Z" }, null, cards)).toEqual({
-      target: "yoto", title: "The Gruffalo", subtitle: "Julia Donaldson", imageUrl: "g.jpg", isPlaying: true, positionMs: null, durationMs: null,
+  const t0 = 1_000_000_000;
+  const live = (cardId: string | null, playbackStatus: string | null, chapterTitle: string | null = null) => ({ cardId, playbackStatus, chapterTitle });
+  it("shows what the player says it is playing, with the chapter under the title", () => {
+    expect(toYotoPlaying(live("c1", "playing", "Chapter 2"), null, cards, t0)).toEqual({
+      target: "yoto", title: "The Gruffalo", subtitle: "Chapter 2", imageUrl: "g.jpg", isPlaying: true, positionMs: null, durationMs: null,
     });
   });
-  it("is nothing when the player is offline or has no card in", () => {
-    expect(resolveNow({ activeCard: "c1", isOnline: false }, null)).toBeNull();
-    expect(resolveNow({ activeCard: "none", isOnline: true }, null)).toBeNull();
+  it("shows a pause, and nothing once stopped or with no card", () => {
+    expect(resolveYoto(live("c1", "paused"), null, t0)?.playing).toBe(false);
+    expect(resolveYoto(live("c1", "stopped"), null, t0)).toBeNull();
+    expect(resolveYoto(live("none", "playing"), null, t0)).toBeNull();
   });
-  it("believes a command newer than the status", () => {
-    expect(resolveNow({ activeCard: "none", updatedAt: "2026-10-11T10:00:00Z" }, { cardId: "c2", playing: true, at: t0 + 1000 })).toEqual({ cardId: "c2", playing: true });
-    expect(resolveNow({ activeCard: "c1", updatedAt: "2026-10-11T10:00:00Z" }, { cardId: null, playing: false, at: t0 + 1000 })).toBeNull();
+  it("believes a command sent moments ago over a reply that may predate it", () => {
+    expect(resolveYoto(live(null, "stopped"), { cardId: "c2", playing: true, at: t0 - 5_000 }, t0)).toEqual({ cardId: "c2", playing: true, chapter: null });
+    expect(resolveYoto(live("c1", "playing"), { cardId: null, playing: false, at: t0 - 5_000 }, t0)).toBeNull();
   });
-  it("keeps our pause when a later status still shows the same card", () => {
-    expect(resolveNow({ activeCard: "c1", updatedAt: "2026-10-11T10:05:00Z" }, { cardId: "c1", playing: false, at: t0 })).toEqual({ cardId: "c1", playing: false });
+  it("follows the player once the command has settled (a card pushed in by hand)", () => {
+    expect(resolveYoto(live("c3", "playing"), { cardId: "c1", playing: false, at: t0 - 60_000 }, t0)).toEqual({ cardId: "c3", playing: true, chapter: null });
   });
-  it("follows the status when someone put in another card since", () => {
-    expect(resolveNow({ activeCard: "c3", updatedAt: "2026-10-11T10:05:00Z" }, { cardId: "c1", playing: false, at: t0 })).toEqual({ cardId: "c3", playing: true });
+  it("falls back to our last command when the player doesn't answer, for a few hours", () => {
+    expect(resolveYoto(null, { cardId: "c1", playing: true, at: t0 - 60_000 }, t0)?.cardId).toBe("c1");
+    expect(resolveYoto(null, { cardId: "c1", playing: true, at: t0 - 4 * 3_600_000 }, t0)).toBeNull();
+    expect(resolveYoto(null, null, t0)).toBeNull();
   });
   it("names an unknown card plainly", () => {
-    expect(toYotoPlaying({ activeCard: "zz" }, null, cards)?.title).toBe("A Yoto card");
+    expect(toYotoPlaying(live("zz", "playing"), null, cards, t0)?.title).toBe("A Yoto card");
   });
 });
 
