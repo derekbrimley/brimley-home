@@ -40,8 +40,9 @@ cd android && ./gradlew assembleDebug   # needs the Android SDK
 
 `GET /api/today` is the only read the tablet makes. `lib/today.ts` assembles it from the
 sheet cache (`kv` table, refreshed when older than 10 minutes), Google Calendar, Open-Meteo,
-`job_completions`, `cards`, `catalog_items`, and Crate. Every source is wrapped so one
-failure only adds a line to `warnings`.
+`job_completions`, `cards`, `catalog_items`, Crate, and Yoto. Every source is wrapped so one
+failure only adds a line to `warnings`. Yoto commands go out over MQTT from `api/yoto`, one
+short session each; Yoto's rotating refresh token lives in `kv.yoto_auth`.
 
 The Google Sheet is the master list (`supabase/sheet-template.md`). `lib/catalog.ts`
 resolves Watch rows with TMDB (availability) and JustWatch's GraphQL endpoint (title

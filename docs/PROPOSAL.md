@@ -176,12 +176,11 @@ items are checked by fetching the URL.
 
 ### Yoto
 
-Yoto has an official developer API (yoto.dev): OAuth client credentials, the
-library of purchased cards with chapters and audio stream URLs, and MQTT control of
-players (play a card, pause, resume, volume, live status). "Stories" lists the cards
-we own; tapping one asks where to play: **the Yoto player** (MQTT command) or **the
-tablet's own speaker** (stream the card's chapters with ExoPlayer). The Yoto app does
-not appear to cast to a Chromecast, so the TV is not a target for stories.
+The backend uses Yoto's developer API: OAuth (a one-time browser login whose rotating
+refresh token lives in `kv`), the family library, the player's REST status, and MQTT
+commands sent as one short session each. Stories lists the cards we own; tapping one
+asks where to play: **the Yoto player** or **the tablet's own speaker** (signed track
+URLs, played with ExoPlayer). The TV is not a target for stories.
 
 ### Admin ("Add something")
 
@@ -260,7 +259,9 @@ RLS on, service role from the API, as in Crate.
   shows the week on Mondays.
 - Watch (milestone 5): titles start on the Google TV over the Android TV remote
   protocol; podcasts and music play on the tablet.
-- Not started: Yoto and Our makes (milestone 6).
+- Stories (milestone 6): Yoto cards start on the Yoto player or the tablet; the Playing
+  card shows the Yoto with play/pause and stop.
+- Not started: Our makes.
 
 ## Build order
 

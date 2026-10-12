@@ -41,7 +41,11 @@ Routes (all take `Authorization: Bearer <token>` from `HOME_API_TOKENS`):
 | `GET /api/music` | Crate's crates with their current picks, as shelves |
 | `POST /api/music/play` | `{ uri }` start an album on the kitchen speaker through Crate |
 | `POST /api/music/control` | `{ action }` resume, pause, next, previous |
-| `GET /api/cron/sync` | Daily: re-read the sheet and re-resolve every title |
+| `GET /api/yoto` | The family's Yoto cards, and the player (`players` lists them all) |
+| `GET /api/yoto/cards/:id` | Signed track URLs, to play a card on the tablet |
+| `POST /api/yoto/play` | `{ cardId }` start a card on the Yoto player |
+| `POST /api/yoto/control` | `{ action }` pause, resume, stop |
+| `GET /api/cron/sync` | Daily: re-read the sheet, re-resolve every title, re-read the Yoto library |
 
 The lunch menu on Zo: the automation that reads the district's menu writes `lunch.json`,
 and a background script posts it on Monday morning. The card shows only on that Monday
@@ -109,6 +113,26 @@ Spotify app drops off Spotify's device list when idle; with
 and the APK's signing SHA1, redirect `brimley-home://spotify-callback`), the
 dashboard wakes it first. Podcasts on the Listen shelf play on the tablet too.
 
+### Stories (Yoto)
+
+The backend talks to Yoto's cloud: the family's card library over REST, and
+the player over MQTT. The tablet holds no Yoto login. Set up once:
+
+1. At yoto.dev, sign in, then My apps → create an app with the callback
+   `http://localhost:8765/callback` and the scopes `family:library:view`,
+   `family:devices:view` and `family:devices:control`.
+2. From the repo root on a laptop: `node scripts/yoto-login.mjs <client id>`, then
+   sign in with the family Yoto account.
+3. Put the printed `YOTO_CLIENT_ID` and `YOTO_REFRESH_TOKEN` in Vercel and redeploy.
+   With more than one player, set `YOTO_DEVICE_ID` to an `id` from `players` in
+   `GET /api/yoto`; otherwise the first online player is used.
+
+Yoto replaces the refresh token on every use. The backend keeps the current one
+in the `kv` table, so the env var is only the starting point. Running the login
+again (and updating the env var) starts over. On the tablet: Stories → a cover →
+**On the Yoto** or **Here in the kitchen**. A card pushed into the Yoto by hand
+shows on the Playing card within a few minutes.
+
 Build status: the backend typechecks and its tests pass; `./gradlew testDebugUnitTest
 assembleDebug` (JDK 17) runs the tablet's unit tests and builds a debug APK.
 
@@ -118,8 +142,8 @@ See `docs/PROPOSAL.md` for the plan and the milestones. Done: the app shell with
 Woodcut look, the home screen, the stylus note, the Watch picker, the backend for
 calendar, weather, jobs, bounties, cards and the sheet-driven catalog, music
 through Crate (shelves, play on the tablet, transport), the Monday lunch menu from
-Zo, titles on the TV, and podcasts on the tablet. Not yet: Yoto and "Our makes"
-(milestone 6).
+Zo, titles on the TV, podcasts on the tablet, and Yoto stories (on the Yoto or the
+tablet). Not yet: "Our makes" (milestone 6).
 
 Music setup: in Crate, open the profile menu, Household Tokens, create one named
 "Kitchen tablet", and put it in `CRATE_TOKEN`. Set `CRATE_API_URL` to Crate's address
