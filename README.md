@@ -42,7 +42,7 @@ Routes (all take `Authorization: Bearer <token>` from `HOME_API_TOKENS`):
 | `POST /api/music/play` | `{ uri }` start an album on the kitchen speaker through Crate |
 | `POST /api/music/control` | `{ action }` resume, pause, next, previous |
 | `GET /api/yoto` | The family's Yoto cards, and the player (`players` lists them all) |
-| `GET /api/yoto/cards/:id` | Signed track URLs, to play a card on the tablet |
+| `GET /api/yoto/tracks?cardId=` | Signed track URLs, to play a card on the tablet |
 | `POST /api/yoto/play` | `{ cardId }` start a card on the Yoto player |
 | `POST /api/yoto/control` | `{ action }` pause, resume, stop |
 | `GET /api/cron/sync` | Daily: re-read the sheet, re-resolve every title, re-read the Yoto library |

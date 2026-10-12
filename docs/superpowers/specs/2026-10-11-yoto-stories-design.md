@@ -50,7 +50,7 @@ shows up on the Playing card, a few minutes late.
 | Route | Does |
 |---|---|
 | `GET /api/yoto` | `{ cards: StoryCard[], player: { id, name, online } \| null }`. The cards come from the library cache. The player comes from a live `devices/mine` call, so the sheet can say "asleep". |
-| `GET /api/yoto/cards/:id` | `{ tracks: { title, chapter, url, durationSec }[] }`: signed URLs, in chapter order. `yoto:#…` placeholders are skipped. |
+| `GET /api/yoto/tracks?cardId=` | `{ tracks: { title, chapter, url, durationSec }[] }`: signed URLs, in chapter order. `yoto:#…` placeholders are skipped. |
 | `POST /api/yoto/play` | `{ cardId }` → MQTT `device/{id}/command/card/start` with `{"uri":"https://yoto.io/<cardId>"}`. |
 | `POST /api/yoto/control` | `{ action: pause \| resume \| stop }` → `…/command/card/{action}`. |
 

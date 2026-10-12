@@ -67,7 +67,7 @@ class HomeApi(private val baseUrl: String, private val token: String) {
     }
 
     suspend fun storyTracks(cardId: String): List<StoryTrack> = withContext(Dispatchers.IO) {
-        client.newCall(request("/api/yoto/cards/$cardId").get().build()).execute().use { res ->
+        client.newCall(request("/api/yoto/tracks?cardId=$cardId").get().build()).execute().use { res ->
             val body = res.body?.string().orEmpty()
             if (!res.isSuccessful) throw ApiException(errorMessage(body) ?: "yoto ${res.code}")
             json.decodeFromString(TracksResponse.serializer(), body).tracks
