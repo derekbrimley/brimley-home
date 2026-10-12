@@ -288,6 +288,14 @@ export async function fetchYotoPlaying(): Promise<Playing | null> {
   const lib = await library(token);
   if (!lib.playerId) return null;
   const [live, ours] = await Promise.all([askEvents(lib.playerId, token).catch(() => null), getKv<YotoNow>("yoto_now")]);
+  if (!live && ours?.cardId) {
+    // No answer: a sleeping player (story over, or switched off) is playing
+    // nothing, whatever we last told it. Only an awake but silent one gets the
+    // benefit of our last command.
+    const players = await yoto<RawDevices>("/device-v2/devices/mine", token).catch(() => null);
+    const me = players ? listPlayers(players).find((p) => p.id === lib.playerId) : undefined;
+    if (players && !me?.online) return null;
+  }
   return toYotoPlaying(live, ours, lib.cards, Date.now());
 }
 
