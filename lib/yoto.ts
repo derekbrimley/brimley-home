@@ -142,12 +142,16 @@ export function toStoryCards(raw: RawLibrary): StoryCard[] {
 
 export interface RawDevices { devices?: { deviceId?: string; name?: string; online?: boolean }[] }
 
+export function listPlayers(raw: RawDevices): YotoPlayer[] {
+  return (raw.devices ?? [])
+    .filter((d) => d.deviceId)
+    .map((d) => ({ id: d.deviceId!, name: d.name?.trim() || "Yoto", online: d.online === true }));
+}
+
 // YOTO_DEVICE_ID picks a player when the family has more than one; otherwise
 // the first one that is online, else the first one.
 export function pickPlayer(raw: RawDevices, wantedId: string | undefined): YotoPlayer | null {
-  const all = (raw.devices ?? [])
-    .filter((d) => d.deviceId)
-    .map((d) => ({ id: d.deviceId!, name: d.name?.trim() || "Yoto", online: d.online === true }));
+  const all = listPlayers(raw);
   if (wantedId) return all.find((d) => d.id === wantedId) ?? null;
   return all.find((d) => d.online) ?? all[0] ?? null;
 }
@@ -169,10 +173,11 @@ async function library(token: string, force = false): Promise<CachedLibrary> {
 }
 
 // GET /api/yoto: the cards, and whether the player is awake right now.
-export async function fetchStories(): Promise<{ cards: StoryCard[]; player: YotoPlayer | null }> {
+// `players` lists every player, for picking YOTO_DEVICE_ID; the tablet ignores it.
+export async function fetchStories(): Promise<{ cards: StoryCard[]; player: YotoPlayer | null; players: YotoPlayer[] }> {
   const token = await accessToken();
   const [lib, devices] = await Promise.all([library(token), yoto<RawDevices>("/device-v2/devices/mine", token)]);
-  return { cards: lib.cards, player: pickPlayer(devices, process.env.YOTO_DEVICE_ID) };
+  return { cards: lib.cards, player: pickPlayer(devices, process.env.YOTO_DEVICE_ID), players: listPlayers(devices) };
 }
 
 // Daily cron: re-read the library so new cards appear the next morning.
@@ -263,7 +268,24 @@ export function nextNow(cmd: YotoCommand, current: string | null, now: number): 
 }
 
 // Loaded on demand so /api/today's cold start doesn't pay for the MQTT client.
-async function publish(playerId: string, token: string, topic: string, payload: string): Promise<void> {
+// The player answers each command on device/{id}/response with
+// { status: { card: "OK" | "FAIL", … } }. Null when this reply says nothing
+// about the command we sent.
+export function commandAnswer(raw: string, resource: string): "OK" | "FAIL" | string | null {
+  try {
+    const status = (JSON.parse(raw) as { status?: Record<string, unknown> }).status;
+    const v = status?.[resource];
+    return typeof v === "string" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+const ANSWER_WAIT_MS = 4000;
+
+// Connect, listen for the player's answer, publish, wait briefly for it.
+// Returns the answer, or null if the player said nothing in time.
+async function publish(playerId: string, token: string, topic: string, payload: string): Promise<string | null> {
   const { connectAsync } = await import("mqtt");
   const client = await connectAsync(BROKER, {
     clientId: `BRIMLEY${playerId}${randomUUID()}`.replace(/[^A-Za-z0-9]/g, ""),
@@ -272,14 +294,24 @@ async function publish(playerId: string, token: string, topic: string, payload: 
     reconnectPeriod: 0,
     connectTimeout: 8000,
   });
+  const resource = topic.split("/")[3];
   try {
+    const answered = new Promise<string | null>((resolve) => {
+      const timer = setTimeout(() => resolve(null), ANSWER_WAIT_MS);
+      client.on("message", (_t, buf) => {
+        const answer = commandAnswer(buf.toString(), resource);
+        if (answer !== null) { clearTimeout(timer); resolve(answer); }
+      });
+    });
+    await client.subscribeAsync(`device/${playerId}/response`, { qos: 1 });
     await client.publishAsync(topic, payload, { qos: 1 });
+    return await answered;
   } finally {
     await client.endAsync();
   }
 }
 
-export async function sendToYoto(cmd: YotoCommand): Promise<{ player: string }> {
+export async function sendToYoto(cmd: YotoCommand): Promise<{ player: string; answer: string | null }> {
   const token = await accessToken();
   const player = pickPlayer(await yoto<RawDevices>("/device-v2/devices/mine", token), process.env.YOTO_DEVICE_ID);
   if (!player) throw new Error("There's no Yoto player on this account");
@@ -293,7 +325,9 @@ export async function sendToYoto(cmd: YotoCommand): Promise<{ player: string }> 
     current = resolveNow(status, ours)?.cardId ?? null;
   }
   const { topic, payload } = commandFor(player.id, cmd);
-  await publish(player.id, token, topic, payload);
+  const answer = await publish(player.id, token, topic, payload);
+  if (answer !== null && answer !== "OK") throw new Error(`The Yoto said no (${answer})`);
+  if (answer === null) console.log(JSON.stringify({ yoto: "no answer", topic }));
   await setKv("yoto_now", nextNow(cmd, current, Date.now()));
-  return { player: player.name };
+  return { player: player.name, answer };
 }

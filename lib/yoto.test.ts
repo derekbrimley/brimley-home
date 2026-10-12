@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commandFor, needsRefresh, nextNow, pickAuth, pickPlayer, resolveNow, seedOf, toAuth, toStoryCards, toTracks, toYotoPlaying, type StoryCard } from "./yoto";
+import { commandAnswer, commandFor, needsRefresh, nextNow, pickAuth, pickPlayer, resolveNow, seedOf, toAuth, toStoryCards, toTracks, toYotoPlaying, type StoryCard } from "./yoto";
 
 describe("pickAuth", () => {
   const stored = { refreshToken: "rotated-2", accessToken: "a", expiresAt: 5_000_000, seed: seedOf("first") };
@@ -113,5 +113,16 @@ describe("commandFor / nextNow", () => {
     expect(nextNow({ action: "play", cardId: "c1" }, null, 5)).toEqual({ cardId: "c1", playing: true, at: 5 });
     expect(nextNow({ action: "pause" }, "c1", 6)).toEqual({ cardId: "c1", playing: false, at: 6 });
     expect(nextNow({ action: "stop" }, "c1", 7)).toEqual({ cardId: null, playing: false, at: 7 });
+  });
+});
+
+describe("commandAnswer", () => {
+  it("reads the player's answer for the command's resource", () => {
+    expect(commandAnswer('{"status":{"card":"OK","req_body":"…"}}', "card")).toBe("OK");
+    expect(commandAnswer('{"status":{"card":"FAIL"}}', "card")).toBe("FAIL");
+  });
+  it("ignores answers to other commands and junk", () => {
+    expect(commandAnswer('{"status":{"volume":"OK"}}', "card")).toBeNull();
+    expect(commandAnswer("not json", "card")).toBeNull();
   });
 });
