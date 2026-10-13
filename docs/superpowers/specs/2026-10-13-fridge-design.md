@@ -52,7 +52,7 @@ The Fridge depends on keeping old notes, so this has to be fixed as part of it:
   usually tens of KB each, so 12 is a reasonable one-off download. They're never
   polled and never cached to disk.
 - **Old notes are read-only.** The tablet can't take a note down or put an old one
-  back up. A parent removes one with `DELETE /api/cards/:id`, as today. Rows older
+  back up (settled; `POST /api/notes { fromId }` would add it later). A parent removes one with `DELETE /api/cards/:id`, as today. Rows older
   than the newest 12 just stop showing; nothing is deleted.
 - **Makes stay in the sheet, in sheet order.** Parents put the newest at the top if
   they want it first. The `projects` table from the proposal's schema isn't built:
@@ -60,8 +60,8 @@ The Fridge depends on keeping old notes, so this has to be fixed as part of it:
   it.
 - **A make's link opens in an in-app WebView**, kept in kiosk. The WebView stays on
   the link's own host, so a game can load its pages but a stray link to another
-  site does nothing. A make with no link only shows its picture. The alternative,
-  showing links nowhere on the tablet, is listed under open questions.
+  site does nothing. A make with no link only shows its picture. (Settled: the
+  alternative was a picture wall with no links.)
 - **Picture URLs from Google Drive are fixed up.** Parents will paste Drive share
   links (`drive.google.com/file/d/<id>/view`, `open?id=<id>`), which don't serve an
   image. `lib/makes.ts` rewrites them to `https://drive.google.com/thumbnail?id=<id>&sz=w800`.
@@ -80,11 +80,11 @@ The Fridge depends on keeping old notes, so this has to be fixed as part of it:
   It goes in `lib/types.ts`, mirrored in `Today.kt`. Built by a pure
   `toFridgeNotes(rows)` in `lib/notes.ts`, which drops a drawing with no PNG.
 - `lib/queries.ts`:
-  - `getTodayCardRows()` replaces `getCardRows()` in `buildToday`: non-note kinds
-    (`.not("kind", "in", "(note,drawing)")`, limit 100) plus the newest note, in a
-    single `Promise.all`.
+  - `getCardRows()` keeps its name and callers (`buildToday`, `GET /api/cards`) and
+    becomes two queries in one `Promise.all`: non-note kinds
+    (`.not("kind", "in", "(note,drawing)")`, limit 100) and the newest note.
   - `getNoteRows(limit)` returns note and drawing rows, newest first, with
-    `created_at`. `GET /api/cards` uses the same split as `/api/today`.
+    `created_at`.
 - `lib/makes.ts`: `normalizeImageUrl(url)` and `toMakes(rows)`. The inline map in
   `today.ts` moves here.
 - **No schema change.** `cards.created_at` already exists. An index
@@ -93,8 +93,8 @@ The Fridge depends on keeping old notes, so this has to be fixed as part of it:
 
 ## 2. What the family sees
 
-**Home.** The Note card looks the same. Its title row gains a small "Fridge →" pill
-on the right (`CardTitle`'s `trailing`), so the new tap target can be found. A tap
+**Home.** The Note card looks the same. Its title row gains a small "Fridge →" label
+(`CardTitle`'s `trailing`), so the new tap target can be found. A tap
 anywhere except the pencil opens the Fridge.
 
 **The Fridge** (`ui/FridgeScreen.kt`) is a full screen with the black band like
@@ -176,23 +176,17 @@ states.
    things stand", and `sheet-template.md` (Drive pictures must be shared "anyone
    with the link").
 
-## Open questions (recommendation first)
+## Settled (2026-10-13)
 
-1. **Make links: open them in a WebView, or don't show them on the tablet at all?**
-   Recommended: a WebView limited to the link's host. With no links, the Fridge is a
-   picture wall, which is safer and simpler, but a game a kid made can't be played.
-2. **Card tap: should it open the Fridge, or keep drawing, with the Fridge behind the
-   "Fridge →" pill only?** Recommended: open the Fridge, because the pill alone is a
-   small target. Either way, the pencil keeps drawing.
-3. **"Put it back up" for an old note?** It would copy the row as a new note.
-   Recommended: leave it out for now. It's an easy add later (`POST /api/notes
-   { fromId }`).
+1. **Make links** open in the WebView, limited to the link's own host.
+2. **Tapping the Note card opens the Fridge.** The pencil keeps drawing.
+3. **"Put it back up"** is left out.
 
 ## Risks and unknowns
 
 - **WebView on the DC-1.** Reflective LCD at 60 Hz, so a Scratch game should run,
   but it hasn't been tried. Scratch's own player is heavy. If it's too slow, the
-  fallback is open question 1's "picture only".
+  fallback is a picture-only Fridge (drop the "Open" pill).
 - **Drive thumbnails** need the file shared publicly, and Google sometimes changes
   the thumbnail endpoint. The rewrite is one function in `lib/makes.ts`, and a bad
   URL just shows the fridge drawing.
