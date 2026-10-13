@@ -83,6 +83,15 @@ export interface Make {
   imageUrl: string | null;
 }
 
+// An older note on the Fridge, from GET /api/notes. Drawings carry their PNG.
+export interface FridgeNote {
+  id: number;
+  kind: "note" | "drawing";
+  body: string | null;
+  png: string | null;     // base64 PNG for a drawing
+  createdAt: string;
+}
+
 export interface Today {
   generatedAt: string;
   date: string;           // YYYY-MM-DD in HOME_TZ
@@ -91,7 +100,7 @@ export interface Today {
   events: TodayEvent[];
   tomorrowFirst: TodayEvent | null;
   jobs: JobsBlock[];
-  cards: Card[];
+  cards: Card[];          // at most one note or drawing: the newest
   playing: Playing[];
   catalog: CatalogItem[];
   makes: Make[];

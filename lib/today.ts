@@ -1,4 +1,5 @@
 import { activeCards } from "./cards";
+import { toMakes } from "./makes";
 import { fetchEvents, normalizeEvents, parseFamily } from "./calendar";
 import { listenSourceKey, resolveListen, resolveWatch, toCatalogItems, watchSourceKey, type CatalogRow } from "./catalog";
 import { fetchKitchenPlaying } from "./crate";
@@ -156,7 +157,7 @@ export async function buildToday(now = new Date()): Promise<Today> {
     cards: cardRows ? activeCards(cardRows, now.toISOString()) : [],
     playing,
     catalog: catalogRows && sheet ? toCatalogItems(catalogRows, sheet.services) : [],
-    makes: sheet ? sheet.makes.map((m) => ({ title: m.title, who: m.who || null, link: m.link || null, imageUrl: m.imageUrl || null })) : [],
+    makes: sheet ? toMakes(sheet.makes) : [],
     warnings,
   };
 }

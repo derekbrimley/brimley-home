@@ -1,15 +1,22 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { authenticate } from "../lib/auth";
-import { insertCard } from "../lib/queries";
+import { noteLimit, toFridgeNotes } from "../lib/notes";
+import { getNoteRows, insertCard } from "../lib/queries";
 
+// GET  /api/notes?limit=12                         — the Fridge: newest notes first.
 // POST /api/notes  { text } or { png: "<base64>" }  — becomes the Note card.
 // Drawings are small monochrome PNGs from the stylus canvas; they fit in a row.
 const MAX_PNG_BYTES = 400 * 1024;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== "POST") return res.status(405).end();
+  if (req.method !== "GET" && req.method !== "POST") return res.status(405).end();
   const who = authenticate(req.headers.authorization);
   if (!who) return res.status(401).json({ error: "Unauthorized" });
+
+  if (req.method === "GET") {
+    const rows = await getNoteRows(noteLimit(req.query.limit));
+    return res.status(200).json({ notes: toFridgeNotes(rows) });
+  }
   const b = (req.body ?? {}) as Record<string, unknown>;
 
   if (typeof b.png === "string") {
