@@ -25,7 +25,9 @@ import java.time.LocalTime
 sealed interface Screen {
     data object Home : Screen
     data class Play(val tab: PlayTab) : Screen
-    data object Note : Screen
+    data class Note(val back: Screen = Home) : Screen
+    data object Fridge : Screen
+    data class OpenMake(val make: home.brimley.model.Make) : Screen
     data object TvPair : Screen
     data object TvDebug : Screen
 }
@@ -69,7 +71,8 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
                         onToggleJob = repository::toggleJob,
                         onClaimBounty = repository::claimBounty,
                         onPlaySomething = { screen = Screen.Play(PlayTab.Watch) },
-                        onDrawNote = { screen = Screen.Note },
+                        onOpenFridge = { screen = Screen.Fridge },
+                        onDrawNote = { screen = Screen.Note() },
                         playing = mergePlaying(today.playing, tvState, podcast),
                         tvSetUp = tvState != TvState.NotPaired,
                         onControl = onControl,
@@ -90,11 +93,19 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
             )
             Screen.TvPair -> PairScreen(tv = tv, onDone = { screen = Screen.Home })
             Screen.TvDebug -> TvDebugScreen(catalog = state.today?.catalog.orEmpty(), tv = tv, onHome = { screen = Screen.Home }, onPair = { screen = Screen.TvPair })
-            Screen.Note -> NoteScreen(
-                onCancel = { screen = Screen.Home },
+            is Screen.Note -> NoteScreen(
+                onCancel = { screen = s.back },
                 onSave = { png -> repository.postNote(png) },
-                onSaved = { screen = Screen.Home },
+                onSaved = { screen = s.back },
             )
+            Screen.Fridge -> FridgeScreen(
+                today = state.today,
+                loadNotes = repository::fridgeNotes,
+                onHome = { screen = Screen.Home },
+                onDrawNote = { screen = Screen.Note(back = Screen.Fridge) },
+                onOpenMake = { screen = Screen.OpenMake(it) },
+            )
+            is Screen.OpenMake -> MakeScreen(s.make, onBack = { screen = Screen.Fridge })
         }
     }
 }

@@ -49,6 +49,7 @@ fun HomeScreen(
     onToggleJob: (TodayJob) -> Unit,
     onClaimBounty: (Int) -> Unit,
     onPlaySomething: () -> Unit,
+    onOpenFridge: () -> Unit,
     onDrawNote: () -> Unit,
     playing: List<Playing>,
     tvSetUp: Boolean,
@@ -73,7 +74,7 @@ fun HomeScreen(
             }
             Column(Modifier.weight(1.4f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 PlayingCard(playing, tvSetUp, onPlaySomething, onControl, onSetUpTv, Modifier.weight(1.05f).fillMaxWidth())
-                NoteCard(today.cards, onDrawNote, Modifier.weight(1f).fillMaxWidth())
+                NoteCard(today.cards, onOpenFridge, onDrawNote, Modifier.weight(1f).fillMaxWidth())
             }
         }
         Footer(today)

@@ -38,6 +38,7 @@ Routes (all take `Authorization: Bearer <token>` from `HOME_API_TOKENS`):
 | `POST /api/jobs/bounty/claim` | `{ row }` "I did it" on a bounty; writes `waiting` into the sheet |
 | `GET/POST /api/cards`, `DELETE /api/cards/:id` | Day cards |
 | `POST /api/cards/lunch` | `{ week_of, days }` the week's school lunch menu, from Zo |
+| `GET /api/notes?limit=12` | The Fridge's notes, newest first (drawings with their PNGs) |
 | `POST /api/notes` | `{ png }` or `{ text }` from the stylus note screen |
 | `GET /api/music` | Crate's crates with their current picks, as shelves |
 | `POST /api/music/play` | `{ uri }` start an album on the kitchen speaker through Crate |
@@ -143,8 +144,9 @@ See `docs/PROPOSAL.md` for the plan and the milestones. Done: the app shell with
 Woodcut look, the home screen, the stylus note, the Watch picker, the backend for
 calendar, weather, jobs, bounties, cards and the sheet-driven catalog, music
 through Crate (shelves, play on the tablet, transport), the Monday lunch menu from
-Zo, titles on the TV, podcasts on the tablet, and Yoto stories (on the Yoto or the
-tablet). Not yet: "Our makes" (milestone 6).
+Zo, titles on the TV, podcasts on the tablet, Yoto stories (on the Yoto or the
+tablet), and the Fridge behind the Note card (older notes and Our makes). That
+finishes milestone 6.
 
 Music setup: in Crate, open the profile menu, Household Tokens, create one named
 "Kitchen tablet", and put it in `CRATE_TOKEN`. Set `CRATE_API_URL` to Crate's address

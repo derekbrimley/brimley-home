@@ -1,5 +1,7 @@
 package home.brimley.data
 
+import home.brimley.model.FridgeNote
+import home.brimley.model.FridgeNotes
 import home.brimley.model.MusicShelf
 import home.brimley.model.Playing
 import home.brimley.model.Stories
@@ -80,6 +82,14 @@ class HomeApi(private val baseUrl: String, private val token: String) {
             val body = res.body?.string().orEmpty()
             if (!res.isSuccessful) throw ApiException(errorMessage(body) ?: "yoto ${res.code}")
             json.decodeFromString(TracksResponse.serializer(), body).tracks
+        }
+    }
+
+    suspend fun notes(limit: Int = 12): List<FridgeNote> = withContext(Dispatchers.IO) {
+        client.newCall(request("/api/notes?limit=$limit").get().build()).execute().use { res ->
+            val body = res.body?.string().orEmpty()
+            if (!res.isSuccessful) throw ApiException(errorMessage(body) ?: "notes ${res.code}")
+            json.decodeFromString(FridgeNotes.serializer(), body).notes
         }
     }
 
