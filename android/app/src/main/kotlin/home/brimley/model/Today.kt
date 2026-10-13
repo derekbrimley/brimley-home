@@ -1,6 +1,8 @@
 package home.brimley.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 // Mirror of lib/types.ts in the backend. Keep the two in step.
 
@@ -91,6 +93,13 @@ data class FridgeNote(val id: Int, val kind: String, val body: String? = null, v
 
 @Serializable
 data class FridgeNotes(val notes: List<FridgeNote> = emptyList())
+
+// Today's note as /api/today sends it, in the Fridge's shape. Null for other kinds.
+fun Card.toFridgeNote(): FridgeNote? = when (kind) {
+    "drawing" -> data?.get("png")?.jsonPrimitive?.contentOrNull?.let { FridgeNote(id, kind, png = it) }
+    "note" -> body?.takeIf { it.isNotBlank() }?.let { FridgeNote(id, kind, body = it) }
+    else -> null
+}
 
 @Serializable
 data class Today(

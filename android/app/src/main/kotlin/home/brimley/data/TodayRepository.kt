@@ -1,11 +1,13 @@
 package home.brimley.data
 
+import home.brimley.model.FridgeNote
 import home.brimley.model.MusicShelf
 import home.brimley.model.Playing
 import home.brimley.model.Stories
 import home.brimley.model.StoryTrack
 import home.brimley.model.Today
 import home.brimley.model.TodayJob
+import home.brimley.model.toFridgeNote
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -171,6 +173,11 @@ class TodayRepository(private val api: HomeApi, cacheDir: File, private val wake
 
     suspend fun postNote(base64Png: String): Boolean =
         runCatching { api.postNotePng(base64Png); refresh(); true }.getOrDefault(false)
+
+    // The Fridge's notes. Fetched when it opens, never polled or cached: drawings are PNGs.
+    suspend fun fridgeNotes(): Result<List<FridgeNote>> =
+        if (!api.isConfigured) Result.success(_state.value.today?.cards.orEmpty().mapNotNull { it.toFridgeNote() })
+        else runCatching { api.notes() }
 
     private fun readCache(): Today? = runCatching {
         if (!cacheFile.exists()) null else json.decodeFromString(Today.serializer(), cacheFile.readText())
