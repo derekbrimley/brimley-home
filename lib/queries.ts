@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import type { CardRow } from "./cards";
 import type { CatalogRow } from "./catalog";
+import { NOTE_KINDS, type NoteRow } from "./notes";
 import type { SheetData } from "./sheet";
 
 // ── kv (sheet cache) ─────────────────────────────────────────────────────────
@@ -63,9 +64,25 @@ export async function recordBountyClaim(row: number, title: string, kid: string 
 
 // ── cards ────────────────────────────────────────────────────────────────────
 
+// Notes never expire, so they are read apart from the other kinds: only the
+// newest is a day card, and they can't push a birthday out of the 100.
 export async function getCardRows(): Promise<CardRow[]> {
-  const { data } = await supabaseAdmin().from("cards").select("*").order("id", { ascending: false }).limit(100);
-  return (data as CardRow[] | null) ?? [];
+  const db = supabaseAdmin();
+  const [others, note] = await Promise.all([
+    db.from("cards").select("*").not("kind", "in", `(${NOTE_KINDS.join(",")})`).order("id", { ascending: false }).limit(100),
+    db.from("cards").select("*").in("kind", [...NOTE_KINDS]).order("id", { ascending: false }).limit(1),
+  ]);
+  if (others.error) throw new Error(others.error.message);
+  if (note.error) throw new Error(note.error.message);
+  return [...((note.data as CardRow[] | null) ?? []), ...((others.data as CardRow[] | null) ?? [])];
+}
+
+export async function getNoteRows(limit: number): Promise<NoteRow[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("cards").select("id, kind, body, data, created_at").in("kind", [...NOTE_KINDS])
+    .order("id", { ascending: false }).limit(limit);
+  if (error) throw new Error(error.message);
+  return (data as NoteRow[] | null) ?? [];
 }
 
 export async function insertCard(card: Omit<CardRow, "id">): Promise<CardRow> {

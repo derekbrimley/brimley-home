@@ -53,6 +53,8 @@ CREATE TABLE public.cards (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX cards_window ON public.cards (show_from, show_until);
+-- The newest note, and the Fridge's last dozen (GET /api/notes).
+CREATE INDEX cards_kind_id ON public.cards (kind, id DESC);
 
 -- Allowance ledger, for when bounties are approved (status "paid" in the sheet).
 CREATE TABLE public.ledger (

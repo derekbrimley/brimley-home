@@ -85,6 +85,13 @@ data class Weather(
 @Serializable
 data class Make(val title: String, val who: String? = null, val link: String? = null, val imageUrl: String? = null)
 
+// An older note on the Fridge, from GET /api/notes. Drawings carry their PNG.
+@Serializable
+data class FridgeNote(val id: Int, val kind: String, val body: String? = null, val png: String? = null, val createdAt: String = "")
+
+@Serializable
+data class FridgeNotes(val notes: List<FridgeNote> = emptyList())
+
 @Serializable
 data class Today(
     val generatedAt: String,
@@ -94,7 +101,7 @@ data class Today(
     val events: List<TodayEvent> = emptyList(),
     val tomorrowFirst: TodayEvent? = null,
     val jobs: List<JobsBlock> = emptyList(),
-    val cards: List<Card> = emptyList(),
+    val cards: List<Card> = emptyList(),       // at most one note or drawing: the newest
     val playing: List<Playing> = emptyList(),
     val catalog: List<CatalogItem> = emptyList(),
     val makes: List<Make> = emptyList(),
