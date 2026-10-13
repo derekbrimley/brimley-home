@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import home.brimley.ui.theme.Ink
@@ -119,6 +120,29 @@ fun BookIllustration(modifier: Modifier = Modifier, ink: Color = Ink, paper: Col
                 val w = if (i == 2) 12f else 18f
                 drawRect(paper, Offset(18f, y), Size(w, 3f)); drawRect(paper, Offset(64f, y), Size(w, 3f))
             }
+        }
+    }
+}
+
+// The fridge: a tall box split into two doors, a handle cut out of each, and a
+// drawing held to the top door by a round magnet.
+@Composable
+fun FridgeIllustration(modifier: Modifier = Modifier, ink: Color = Ink, paper: Color = Paper) {
+    Canvas(modifier) {
+        inBox {
+            val r = androidx.compose.ui.geometry.CornerRadius(8f)
+            val knob = androidx.compose.ui.geometry.CornerRadius(2f)
+            drawRoundRect(ink, topLeft = Offset(22f, 4f), size = Size(56f, 92f), cornerRadius = r)
+            drawRect(paper, topLeft = Offset(22f, 40f), size = Size(56f, 3f))
+            drawRoundRect(paper, topLeft = Offset(69f, 14f), size = Size(4f, 18f), cornerRadius = knob)
+            drawRoundRect(paper, topLeft = Offset(69f, 50f), size = Size(4f, 26f), cornerRadius = knob)
+            rotate(-8f, pivot = Offset(45f, 22f)) {
+                drawRect(paper, topLeft = Offset(32f, 12f), size = Size(26f, 22f))
+                drawRect(ink, topLeft = Offset(36f, 22f), size = Size(16f, 2.5f))
+                drawRect(ink, topLeft = Offset(36f, 27f), size = Size(11f, 2.5f))
+            }
+            drawCircle(paper, radius = 5f, center = Offset(45f, 13f))
+            drawCircle(ink, radius = 2.5f, center = Offset(45f, 13f))
         }
     }
 }
