@@ -261,7 +261,9 @@ RLS on, service role from the API, as in Crate.
   protocol; podcasts and music play on the tablet.
 - Stories (milestone 6): Yoto cards start on the Yoto player or the tablet; the Playing
   card shows the Yoto with play/pause and stop.
-- Not started: Our makes.
+- Fridge (milestone 6): tapping the Note card opens the Fridge, with the last dozen
+  notes (`GET /api/notes`) and Our makes from the sheet's Makes tab; a make's link
+  opens in a WebView kept to its own site. `/api/today` carries only the newest note.
 
 ## Build order
 
@@ -275,5 +277,5 @@ RLS on, service role from the API, as in Crate.
 
 ## Open questions
 
-- Round 3 layout sign-off, then the build starts with the app shell.
-- One Jobs card with names, or one card per child?
+- ~~Round 3 layout sign-off~~: signed off; the build followed it.
+- ~~One Jobs card with names, or one card per child?~~ One card, a block per kid.

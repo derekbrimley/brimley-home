@@ -14,3 +14,8 @@ fills are marked *(app)*.
 | Services | Service (one per row, in order of preference: Disney+, Max, Netflix, Prime…) |
 
 For Videos, put the YouTube link in the Title column; the app swaps in the real title.
+
+Makes show on the Fridge (tap the Note card), in sheet order. A Picture can be a
+Google Drive share link if the file is shared "anyone with the link". For a Scratch
+game, use the project's embed link (`https://scratch.mit.edu/projects/<id>/embed`): it
+fills the screen, and the tablet only lets a make's page move around its own site.
