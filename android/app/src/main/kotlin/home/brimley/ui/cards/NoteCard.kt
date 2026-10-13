@@ -33,14 +33,14 @@ import home.brimley.ui.theme.Paper
 import home.brimley.ui.theme.Rules
 import kotlinx.serialization.json.jsonPrimitive
 
-// The note owns the card: tap anywhere (or the round pencil) to draw a new one.
+// The note owns the card: tap it to open the Fridge, or the round pencil to draw a new one.
 @Composable
-fun NoteCard(cards: List<Card>, onDrawNote: () -> Unit, modifier: Modifier = Modifier) {
+fun NoteCard(cards: List<Card>, onOpenFridge: () -> Unit, onDrawNote: () -> Unit, modifier: Modifier = Modifier) {
     val note = cards.firstOrNull { it.kind == "drawing" || it.kind == "note" }
-    InkCard(modifier.clip(CardShape).clickable(onClick = onDrawNote)) {
+    InkCard(modifier.clip(CardShape).clickable(onClick = onOpenFridge)) {
         Box(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize()) {
-                CardTitle("Note")
+                CardTitle("Note", trailing = "Fridge →")
                 Box(Modifier.weight(1f).fillMaxWidth().padding(top = 6.dp), contentAlignment = Alignment.Center) {
                     when {
                         note == null -> Text(
