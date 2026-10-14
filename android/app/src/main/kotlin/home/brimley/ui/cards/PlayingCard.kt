@@ -80,8 +80,11 @@ private fun Controls(p: Playing, onControl: (String, String) -> Unit) {
                 RoundButton(filled = true, onClick = { onControl("podcast", if (p.isPlaying) "pause" else "resume") }) { if (p.isPlaying) PauseIcon(it) else PlayIcon(it) }
                 RoundButton(filled = false, onClick = { onControl("podcast", "forward") }) { Label("+30", it) }
             }
+            // OK is the remote's centre button: it presses Play on the title's
+            // page, or picks the profile, wherever the TV has landed.
             "tv" -> {
-                RoundButton(filled = true, onClick = { onControl("tv", "playpause") }) { PlayPauseIcon(it) }
+                RoundButton(filled = true, onClick = { onControl("tv", "ok") }) { Label("OK", it) }
+                RoundButton(filled = false, onClick = { onControl("tv", "playpause") }) { PlayPauseIcon(it) }
                 RoundButton(filled = false, onClick = { onControl("tv", "voldown") }) { Label("−", it) }
                 RoundButton(filled = false, onClick = { onControl("tv", "volup") }) { Label("+", it) }
                 InkButton("TV off", onClick = { onControl("tv", "off") }, filled = false, modifier = Modifier.height(64.dp))
@@ -211,7 +214,8 @@ private fun CompactPlaying(p: Playing, onControl: (String, String) -> Unit) {
         Spacer(Modifier.width(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (p.target == "tv") {
-                RoundButton(filled = true, onClick = { onControl("tv", "playpause") }) { PlayPauseIcon(it) }
+                RoundButton(filled = true, onClick = { onControl("tv", "ok") }) { Label("OK", it) }
+                RoundButton(filled = false, onClick = { onControl("tv", "playpause") }) { PlayPauseIcon(it) }
             } else {
                 RoundButton(filled = true, onClick = { onControl(p.target, if (p.isPlaying) "pause" else "resume") }) { if (p.isPlaying) PauseIcon(it) else PlayIcon(it) }
             }
