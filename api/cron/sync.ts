@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (secret && req.headers.authorization !== `Bearer ${secret}`) return res.status(401).end();
   const sheet = await freshSheet(true);
   const errors: string[] = [];
-  const rows = await syncCatalog(sheet, { limit: Number.MAX_SAFE_INTEGER, force: true, errors });
+  const rows = await syncCatalog(sheet, { limit: Number.MAX_SAFE_INTEGER, force: true, errors, warmEpisodes: false });
   // New Yoto cards show up the next morning without waiting out the cache.
   let stories: number | null = null;
   if (isYotoConfigured()) {

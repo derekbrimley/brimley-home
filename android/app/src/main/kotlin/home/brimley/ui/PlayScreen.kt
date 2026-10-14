@@ -156,7 +156,7 @@ fun PlayScreen(
         Box(Modifier.fillMaxSize()) {
             when (tab) {
                 PlayTab.Watch -> WatchShelves(today?.catalog.orEmpty().filter { !it.link.isNullOrBlank() }, onPick = {
-                    if (it.shelf == "shows") onOpenShow(it) else { pending = it; tvStatus = null }
+                    if (it.hasEpisodes) onOpenShow(it) else { pending = it; tvStatus = null }
                 })
                 PlayTab.Music -> MusicShelves(
                     shelves = shelves,

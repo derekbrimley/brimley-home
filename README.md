@@ -104,15 +104,22 @@ Watch tab that sends each title's link to the TV.
 
 Links open the app on the title's page (or its "who's watching" first). The
 Playing card's TV entry has a big OK, the remote's centre button, to press Play
-from there. There are no arrows or Back, so OK can only press what the app has
-already picked. The tablet never presses anything on its own.
+from there, then play/pause and ⏮ / ⏭ (the media keys: back to the start, next
+episode, where the app honours them). There are no arrows or Back, so the kids
+can only press what the app has already picked. The tablet never presses
+anything on its own; volume and power stay on the TV's remote.
 
-Shows open their own page instead: "Next up" (the episode after the last one
+HBO Max ignores every link it is sent (title pages, `/movie/`, even its own
+`/video/watch/` player links): the app opens on its home page. Leave Max out of
+the sheet's Services tab to keep its titles off the shelves.
+
+Shows whose episodes each have their own link (`hasEpisodes` in `/api/today`)
+open their own page instead: "Next up" (the episode after the last one
 started from the tablet), season tabs and a tile per episode. Each tile is a
 link straight to that episode, so the TV starts playing it rather than stopping
 on the show's page (after OK, if the app asks who's watching). A show
-whose service has no per-episode links (JustWatch gives every episode the same
-page) gets one big Play for the show's link. In debug builds the TV test
+whose service has no per-episode links (JustWatch gives every Disney+ episode
+the show's page) goes straight to the usual Play sheet. In debug builds the TV test
 screen's "Episodes" button says how many episodes a show has, or why none.
 
 ### Music and podcasts on the tablet

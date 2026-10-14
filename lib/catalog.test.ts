@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bestTmdbResult, pickOffer, pickService, toCatalogItems, youtubeId, type CatalogRow } from "./catalog";
+import { bestTmdbResult, pickOffer, pickService, tagForTv, toCatalogItems, youtubeId, type CatalogRow } from "./catalog";
 
 describe("youtubeId", () => {
   it("reads ids from the usual link shapes", () => {
@@ -25,8 +25,18 @@ describe("pickOffer", () => {
       { monetizationType: "FLATRATE", standardWebURL: "https://play.max.com/movie/abc", package: { technicalName: "max" } },
       { monetizationType: "FLATRATE", standardWebURL: "https://www.netflix.com/title/1", package: { technicalName: "netflix" } },
     ];
-    expect(pickOffer(offers, "max")).toBe("https://play.max.com/movie/abc");
+    expect(pickOffer(offers, "max")).toBe("https://play.max.com/movie/abc?utm_source=universal_search");
     expect(pickOffer(offers, "disneyplus")).toBeNull();
+  });
+});
+
+describe("tagForTv", () => {
+  it("adds Google TV's tag to HBO Max links that lack it, and leaves the rest alone", () => {
+    const id = "d28771bd-73ed-49a7-9259-bdb33a115cbc";
+    expect(tagForTv(`https://play.hbomax.com/show/${id}`)).toBe(`https://play.hbomax.com/show/${id}?utm_source=universal_search`);
+    expect(tagForTv(`https://play.hbomax.com/show/${id}?utm_source=universal_search`)).toBe(`https://play.hbomax.com/show/${id}?utm_source=universal_search`);
+    expect(tagForTv("https://www.disneyplus.com/browse/entity-abc")).toBe("https://www.disneyplus.com/browse/entity-abc");
+    expect(tagForTv("not a link")).toBe("not a link");
   });
 });
 
@@ -52,5 +62,12 @@ describe("toCatalogItems", () => {
     ];
     const items = toCatalogItems(rows, ["disneyplus"]);
     expect(items.map((i) => [i.title, i.serviceLabel])).toEqual([["Bluey", "Disney+"], ["Squirrels", "YouTube"]]);
+  });
+
+  it("marks only the shows whose episodes can be picked", () => {
+    const row = (source_key: string, shelf: CatalogRow["shelf"]): CatalogRow =>
+      ({ source_key, shelf, title: source_key, service: "max", link: "l", poster_url: null, year: null, runtime_minutes: null, resolved_at: "x", sheet_row: 1 });
+    const items = toCatalogItems([row("sesame", "shows"), row("simpsons", "shows"), row("kiki", "movies")], ["max"], new Set(["sesame", "kiki"]));
+    expect(Object.fromEntries(items.map((i) => [i.id, i.hasEpisodes]))).toEqual({ sesame: true, simpsons: false, kiki: false });
   });
 });

@@ -61,7 +61,22 @@ export function pickOffer(offers: JWOffer[], service: string): string | null {
     return mapped === service && /^(FLATRATE|FREE|ADS)$/i.test(o.monetizationType);
   });
   const best = match.find((o) => o.standardWebURL) ?? match[0];
-  return best?.standardWebURL ?? best?.deeplinkURL ?? null;
+  const link = best?.standardWebURL ?? best?.deeplinkURL ?? null;
+  return link ? tagForTv(link) : null;
+}
+
+// HBO Max's TV app opened the title only for links carrying Google TV's own
+// tag (the shape JustWatch gave on Oct 11); JustWatch sometimes leaves it off.
+export function tagForTv(link: string): string {
+  try {
+    const u = new URL(link);
+    const host = u.hostname.toLowerCase();
+    if ((host === "hbomax.com" || host.endsWith(".hbomax.com") || host === "max.com" || host.endsWith(".max.com")) && !u.searchParams.has("utm_source")) {
+      u.searchParams.set("utm_source", "universal_search");
+      return u.toString();
+    }
+  } catch { /* not a URL: leave it */ }
+  return link;
 }
 
 export interface TmdbResult { id: number; media_type: "movie" | "tv" | "person"; title?: string; name?: string; poster_path?: string | null; release_date?: string; first_air_date?: string; popularity?: number }
@@ -221,7 +236,8 @@ export interface CatalogRow {
 }
 
 // Items the tablet gets: resolved, on a paid service (or youtube/podcast), in sheet order.
-export function toCatalogItems(rows: CatalogRow[], paidServices: string[]): CatalogItem[] {
+// `withEpisodes` are the shows whose episodes can be picked one by one.
+export function toCatalogItems(rows: CatalogRow[], paidServices: string[], withEpisodes: Set<string> = new Set()): CatalogItem[] {
   const paid = new Set([...paidServices, "youtube", "podcast"]);
   return rows
     .filter((r) => r.service && paid.has(r.service))
@@ -233,6 +249,7 @@ export function toCatalogItems(rows: CatalogRow[], paidServices: string[]): Cata
       service: r.service!,
       serviceLabel: serviceLabel(r.service!),
       posterUrl: r.poster_url,
+      hasEpisodes: r.shelf === "shows" && withEpisodes.has(r.source_key),
       link: r.link,
       runtimeMinutes: r.runtime_minutes,
       year: r.year,

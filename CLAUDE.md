@@ -54,7 +54,9 @@ episode's link on the show's service from JustWatch and a still from TMDB, cache
 day in `kv` (`episodes:<source_key>`) and warmed by the cron. A link several episodes
 share is the show's page, so it is dropped; a show left with none falls back to its
 title link, and `note` says why (shown on the TV test screen, and per show in the cron
-summary). The tablet remembers the last episode it started per show for "Next up".
+summary). `/api/today` marks shows that have episodes (`hasEpisodes`); only those
+open the show page. A show is looked up when it is first resolved, and again by
+the cron. The tablet remembers the last episode it started per show for "Next up".
 
 `lib/types.ts` and `android/.../model/Today.kt` are mirrors. Change both together.
 

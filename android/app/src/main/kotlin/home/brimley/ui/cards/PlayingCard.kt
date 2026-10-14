@@ -68,6 +68,7 @@ fun PlayingCard(
 
 @Composable
 private fun Controls(p: Playing, onControl: (String, String) -> Unit) {
+    if (p.target == "tv") return TvControls(onControl)
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         when (p.target) {
             "kitchen" -> {
@@ -80,20 +81,25 @@ private fun Controls(p: Playing, onControl: (String, String) -> Unit) {
                 RoundButton(filled = true, onClick = { onControl("podcast", if (p.isPlaying) "pause" else "resume") }) { if (p.isPlaying) PauseIcon(it) else PlayIcon(it) }
                 RoundButton(filled = false, onClick = { onControl("podcast", "forward") }) { Label("+30", it) }
             }
-            // OK is the remote's centre button: it presses Play on the title's
-            // page, or picks the profile, wherever the TV has landed.
-            "tv" -> {
-                RoundButton(filled = true, onClick = { onControl("tv", "ok") }) { Label("OK", it) }
-                RoundButton(filled = false, onClick = { onControl("tv", "playpause") }) { PlayPauseIcon(it) }
-                RoundButton(filled = false, onClick = { onControl("tv", "voldown") }) { Label("−", it) }
-                RoundButton(filled = false, onClick = { onControl("tv", "volup") }) { Label("+", it) }
-                InkButton("TV off", onClick = { onControl("tv", "off") }, filled = false, modifier = Modifier.height(64.dp))
-            }
             "yoto" -> {
                 RoundButton(filled = true, onClick = { onControl("yoto", if (p.isPlaying) "pause" else "resume") }) { if (p.isPlaying) PauseIcon(it) else PlayIcon(it) }
                 InkButton("Stop", onClick = { onControl("yoto", "stop") }, filled = false, modifier = Modifier.height(64.dp))
             }
         }
+    }
+}
+
+// OK is the remote's centre button: it presses Play on the title's page, or
+// picks the profile, wherever the TV has landed. ⏮ and ⏭ are the media keys
+// (back to the start, next episode) where the app honours them. None of these
+// can move around the app's menus. Volume and power stay on the TV's own remote.
+@Composable
+private fun TvControls(onControl: (String, String) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        RoundButton(filled = true, onClick = { onControl("tv", "ok") }) { Label("OK", it) }
+        RoundButton(filled = false, onClick = { onControl("tv", "playpause") }) { PlayPauseIcon(it) }
+        RoundButton(filled = false, onClick = { onControl("tv", "previous") }) { PrevIcon(it) }
+        RoundButton(filled = false, onClick = { onControl("tv", "next") }) { NextIcon(it) }
     }
 }
 

@@ -48,6 +48,7 @@ data class CatalogItem(
     val link: String? = null,
     val runtimeMinutes: Int? = null,
     val year: Int? = null,
+    val hasEpisodes: Boolean = false,   // a show whose episodes can be picked (opens its page)
 )
 
 // A show's episodes, from GET /api/episodes?id=<catalog id>. Each has its own link.

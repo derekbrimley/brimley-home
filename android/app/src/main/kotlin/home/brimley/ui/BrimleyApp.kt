@@ -47,7 +47,7 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
             "yoto" -> repository.controlYoto(action)
             "podcast" -> when (action) { "back" -> podcasts.seekBy(-30_000); "forward" -> podcasts.seekBy(30_000); else -> podcasts.toggle() }
             "tv" -> scope.launch {
-                when (action) { "ok" -> tv.ok(); "playpause" -> tv.playPause(); "volup" -> tv.volumeUp(); "voldown" -> tv.volumeDown(); "off" -> tv.powerOff() }
+                when (action) { "ok" -> tv.ok(); "playpause" -> tv.playPause(); "next" -> tv.next(); "previous" -> tv.previous() }
             }
         }
     }
