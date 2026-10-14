@@ -1,9 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { authenticate } from "../../lib/auth";
 import { subPath } from "../../lib/route";
-import { controlKitchen, fetchShelves, playOnKitchen, type ControlAction } from "../../lib/crate";
+import { controlKitchen, fetchHomeCrate, fetchShelves, playOnKitchen, type ControlAction } from "../../lib/crate";
 
 // GET  /api/music            shelves: Crate's crates with their current picks
+// GET  /api/music/crate      { crate }: the one crate the home screen shows (HOME_CRATE)
 // POST /api/music/play       { uri, source? }   start an album on the kitchen speaker
 // POST /api/music/control    { action }          resume | pause | next | previous
 export const config = { maxDuration: 15 };
@@ -17,6 +18,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === "GET" && path === "") {
       res.setHeader("Cache-Control", "no-store");
       return res.status(200).json({ shelves: await fetchShelves() });
+    }
+    if (req.method === "GET" && path === "crate") {
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(200).json({ crate: await fetchHomeCrate() });
     }
     if (req.method === "POST" && path === "play") {
       const uri = typeof body.uri === "string" ? body.uri : "";

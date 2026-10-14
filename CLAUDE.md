@@ -32,15 +32,20 @@ cd android && ./gradlew assembleDebug   # needs the Android SDK
 - Illustrations are solid black silhouettes with white cut-outs, drawn in
   `ui/Illustrations.kt`. New features get a drawing, not just a label.
 - Nothing on the tablet asks for typing. Parents edit the Google Sheet or post cards.
-- The home screen is four cards: Today and Jobs (small, left), Playing and Note (big,
-  right), a black band on top, a day-card footer. Resist adding a fifth card.
+- The home screen is three columns: Today and Jobs stacked on the left, Music (one
+  crate's covers, scrolling, with what's playing in the kitchen on top) filling the
+  middle, Watch and Yoto stacked on the right; a black band on top, a day-card footer.
+  Watch and Yoto open their pickers and come back home to the controls. The note card
+  and the fridge are off the home screen (code kept). Resist adding another card.
 - Tap targets ≥ 64 dp; body text ≥ 20 sp. The screen is read from across a counter.
 
 ## Data flow
 
 `GET /api/today` is the only read the tablet makes. `lib/today.ts` assembles it from the
 sheet cache (`kv` table, refreshed when older than 10 minutes), Google Calendar, Open-Meteo,
-`job_completions`, `cards`, `catalog_items`, Crate, and Yoto. Every source is wrapped so one
+`job_completions`, `cards`, `catalog_items`, Crate, and Yoto. The Music card's crate
+comes separately from `GET /api/music/crate` (`HOME_CRATE`, else the first crate), fetched
+hourly so the covers don't reshuffle under a finger. Every source is wrapped so one
 failure only adds a line to `warnings`. Yoto commands go out over MQTT from `api/yoto`, one
 short session each; Yoto's rotating refresh token lives in `kv.yoto_auth`.
 

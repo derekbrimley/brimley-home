@@ -41,6 +41,7 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
     val tvState by tv.state.collectAsState()
     val podcast by podcasts.state.collectAsState()
     val scope = rememberCoroutineScope()
+    var musicStatus by remember { mutableStateOf<String?>(null) }
     val onControl: (String, String) -> Unit = { target, action ->
         when (target) {
             "kitchen" -> repository.controlMusic(action)
@@ -72,9 +73,19 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
                         error = state.error,
                         onToggleJob = repository::toggleJob,
                         onClaimBounty = repository::claimBounty,
-                        onPlaySomething = { screen = Screen.Play(PlayTab.Watch) },
-                        onOpenFridge = { screen = Screen.Fridge },
-                        onDrawNote = { screen = Screen.Note() },
+                        crate = state.crate,
+                        crateError = state.crateError,
+                        musicStatus = musicStatus,
+                        onPlayAlbum = { item ->
+                            musicStatus = "Starting ${item.title}…"
+                            scope.launch {
+                                repository.playMusic(item.uri)
+                                    .onSuccess { musicStatus = null }
+                                    .onFailure { musicStatus = it.message ?: "Couldn't start it" }
+                            }
+                        },
+                        onPickWatch = { screen = Screen.Play(PlayTab.Watch) },
+                        onPickStory = { screen = Screen.Play(PlayTab.Stories) },
                         playing = mergePlaying(today.playing, tvState, podcast),
                         tvSetUp = tvState != TvState.NotPaired,
                         onControl = onControl,

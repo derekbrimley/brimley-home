@@ -23,13 +23,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import home.brimley.model.Card
+import home.brimley.model.MusicItem
+import home.brimley.model.MusicShelf
 import home.brimley.model.Playing
 import home.brimley.model.Today
 import home.brimley.model.TodayJob
 import home.brimley.ui.cards.JobsCard
-import home.brimley.ui.cards.NoteCard
-import home.brimley.ui.cards.PlayingCard
+import home.brimley.ui.cards.MusicCard
 import home.brimley.ui.cards.TodayCard
+import home.brimley.ui.cards.WatchCard
+import home.brimley.ui.cards.YotoCard
 import home.brimley.ui.theme.Ink
 import home.brimley.ui.theme.Paper
 import kotlinx.serialization.json.jsonArray
@@ -48,9 +51,12 @@ fun HomeScreen(
     error: String?,
     onToggleJob: (TodayJob) -> Unit,
     onClaimBounty: (Int) -> Unit,
-    onPlaySomething: () -> Unit,
-    onOpenFridge: () -> Unit,
-    onDrawNote: () -> Unit,
+    crate: MusicShelf?,
+    crateError: String?,
+    musicStatus: String?,
+    onPlayAlbum: (MusicItem) -> Unit,
+    onPickWatch: () -> Unit,
+    onPickStory: () -> Unit,
     playing: List<Playing>,
     tvSetUp: Boolean,
     onControl: (String, String) -> Unit,
@@ -72,9 +78,11 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
             }
-            Column(Modifier.weight(1.4f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                PlayingCard(playing, tvSetUp, onPlaySomething, onControl, onSetUpTv, Modifier.weight(1.05f).fillMaxWidth())
-                NoteCard(today.cards, onOpenFridge, onDrawNote, Modifier.weight(1f).fillMaxWidth())
+            // The note card (NoteCard) and the fridge are off the home screen for now.
+            MusicCard(crate, crateError, musicStatus, playing, onPlayAlbum, onControl, Modifier.weight(1.15f).fillMaxHeight())
+            Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                WatchCard(playing, tvSetUp, onPickWatch, onControl, onSetUpTv, Modifier.weight(1f).fillMaxWidth())
+                YotoCard(playing, onPickStory, onControl, Modifier.weight(1f).fillMaxWidth())
             }
         }
         Footer(today)

@@ -62,6 +62,14 @@ class HomeApi(private val baseUrl: String, private val token: String) {
         }
     }
 
+    suspend fun homeCrate(): MusicShelf? = withContext(Dispatchers.IO) {
+        client.newCall(request("/api/music/crate").get().build()).execute().use { res ->
+            val body = res.body?.string().orEmpty()
+            if (!res.isSuccessful) throw ApiException(errorMessage(body) ?: "music ${res.code}")
+            json.decodeFromString(CrateResponse.serializer(), body).crate
+        }
+    }
+
     suspend fun episodes(catalogId: String): ShowEpisodes = withContext(Dispatchers.IO) {
         val id = java.net.URLEncoder.encode(catalogId, "UTF-8")
         client.newCall(request("/api/episodes?id=$id").get().build()).execute().use { res ->
@@ -138,6 +146,9 @@ class HomeApi(private val baseUrl: String, private val token: String) {
 
 @Serializable
 private data class ShelvesResponse(val shelves: List<MusicShelf>)
+
+@Serializable
+private data class CrateResponse(val crate: MusicShelf? = null)
 
 @Serializable
 private data class TracksResponse(val tracks: List<StoryTrack>)

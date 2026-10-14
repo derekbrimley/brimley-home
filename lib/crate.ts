@@ -100,6 +100,24 @@ export async function fetchShelves(): Promise<CrateShelf[]> {
   return toShelves(await crate<CrateShelvesResponse>(`/crates?shelves=${SHELF_SIZE}`));
 }
 
+// The home screen's Music card shows one crate, scrolled in place: HOME_CRATE
+// (its name or id, case-insensitive), else the first crate with anything in it.
+export const HOME_CRATE_SIZE = 60;
+
+export function pickCrate(shelves: CrateShelf[], wanted: string | undefined): CrateShelf | null {
+  const w = wanted?.trim().toLowerCase();
+  if (w) {
+    const hit = shelves.find((s) => s.id.toLowerCase() === w || s.name.toLowerCase() === w);
+    if (hit) return hit;
+  }
+  return shelves.find((s) => s.items.length > 0) ?? shelves[0] ?? null;
+}
+
+export async function fetchHomeCrate(): Promise<CrateShelf | null> {
+  const shelves = toShelves(await crate<CrateShelvesResponse>(`/crates?shelves=${HOME_CRATE_SIZE}`));
+  return pickCrate(shelves, process.env.HOME_CRATE);
+}
+
 // The kitchen speaker is found by name (KITCHEN_DEVICE_NAME, substring match,
 // case-insensitive). Falls back to whatever device is active.
 export function pickDevice(devices: CrateDevice[], wantedName: string | undefined): CrateDevice | null {

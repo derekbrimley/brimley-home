@@ -64,16 +64,18 @@ import kotlinx.coroutines.launch
 import home.brimley.ui.theme.Ink
 import home.brimley.ui.theme.Paper
 import home.brimley.ui.theme.PaperBright
-import home.brimley.ui.theme.PillShape
 import home.brimley.ui.theme.Rules
 
-enum class PlayTab(val label: String, val where: String) {
-    Music("Music", "Music goes to the kitchen speaker"),
-    Watch("Watch", "Watch goes to the living room TV"),
-    Stories("Stories", "Stories go to the Yoto, or play here"),
+enum class PlayTab(val label: String, val title: String, val where: String) {
+    Music("Music", "Play some music", "Music goes to the kitchen speaker"),
+    Watch("Watch", "Watch something", "Watch goes to the living room TV"),
+    Stories("Stories", "Pick a story", "Stories go to the Yoto, or play here"),
 }
 
-// One picker, three tabs. Music goes to Spotify on the tablet, Watch to the TV, Listen plays here, Stories to the Yoto or here.
+// One picker per home card: Watch opens on the Watch tab, Yoto on Stories.
+// The tab pills are gone because each card opens its own page; Music stays
+// here (every crate) though the home screen's Music card has taken its place.
+// Music goes to Spotify on the tablet, Watch to the TV, Listen plays here, Stories to the Yoto or here.
 @Composable
 fun PlayScreen(
     today: Today?,
@@ -87,7 +89,7 @@ fun PlayScreen(
     initialTab: PlayTab,
     onHome: () -> Unit,
 ) {
-    var tab by remember { mutableStateOf(initialTab) }
+    val tab = initialTab
     var pending by remember { mutableStateOf<CatalogItem?>(null) }
     var tvStatus by remember { mutableStateOf<String?>(null) }
     var starting by remember { mutableStateOf(false) }
@@ -131,25 +133,12 @@ fun PlayScreen(
             InkButton("← Home", onClick = onHome, filled = false, onPaper = false)
             Spacer(Modifier.width(24.dp))
             Column(Modifier.weight(1f)) {
-                Text("Play something", style = MaterialTheme.typography.headlineLarge, color = Paper)
+                Text(tab.title, style = MaterialTheme.typography.headlineLarge, color = Paper)
                 Text(tab.where, style = MaterialTheme.typography.bodySmall, color = Paper)
             }
             if (BuildConfig.DEBUG && tab == PlayTab.Watch) {
                 InkButton("TV test", onClick = onTvDebug, filled = false, onPaper = false)
                 Spacer(Modifier.width(14.dp))
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PlayTab.entries.forEach { t ->
-                    val on = t == tab
-                    Box(
-                        Modifier
-                            .clip(PillShape)
-                            .background(if (on) Paper else Ink)
-                            .border(BorderStroke(Rules.thin, Paper), PillShape)
-                            .clickable { tab = t }
-                            .padding(horizontal = 22.dp, vertical = 10.dp),
-                    ) { Text(t.label, style = MaterialTheme.typography.labelLarge, color = if (on) Ink else Paper) }
-                }
             }
         }
 
