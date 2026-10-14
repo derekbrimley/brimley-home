@@ -2,9 +2,10 @@ import { activeCards } from "./cards";
 import { toMakes } from "./makes";
 import { fetchEvents, normalizeEvents, parseFamily } from "./calendar";
 import { listenSourceKey, resolveListen, resolveWatch, toCatalogItems, watchSourceKey, type CatalogRow } from "./catalog";
+import { showEpisodes } from "./episodes";
 import { fetchKitchenPlaying } from "./crate";
 import { buildJobsBlocks } from "./jobs";
-import { getCardRows, getCatalogRows, getCompletions, getSheetCache, setSheetCache, upsertCatalogRow } from "./queries";
+import { getCardRows, getCatalogRows, getCompletions, getSheetCache, getShowsWithEpisodes, setSheetCache, upsertCatalogRow } from "./queries";
 import { fetchSheet, serviceLabelFor, writeWatchResult, type SheetData } from "./sheet";
 import { addDays, localDateString, localWeekday, weekStart } from "./time";
 import type { Playing, Today, TodayEvent } from "./types";
@@ -48,10 +49,12 @@ export function isDue(have: CatalogRow | undefined, now: number): boolean {
 
 // Resolve rows that are new or older than a day, a few at a time so a request
 // never waits on a dozen TMDB calls. The daily cron calls this with no limit.
-export interface SyncOptions { limit?: number; force?: boolean; errors?: string[] }
+// A newly resolved show also gets its episodes looked up, so the tablet knows the
+// same day whether it can offer them; the cron does that itself, so it says no.
+export interface SyncOptions { limit?: number; force?: boolean; errors?: string[]; warmEpisodes?: boolean }
 
 export async function syncCatalog(sheet: SheetData, opts: SyncOptions = {}): Promise<CatalogRow[]> {
-  const { limit = MAX_RESOLVES_PER_REQUEST, force = false, errors } = opts;
+  const { limit = MAX_RESOLVES_PER_REQUEST, force = false, errors, warmEpisodes = true } = opts;
   const existing = new Map((await getCatalogRows()).map((r) => [r.source_key, r]));
   const wanted: { key: string; run: () => Promise<CatalogRow> }[] = [];
 
@@ -97,6 +100,9 @@ export async function syncCatalog(sheet: SheetData, opts: SyncOptions = {}): Pro
       const row = await w.run();
       await upsertCatalogRow(row);
       existing.set(w.key, row);
+      if (warmEpisodes && row.shelf === "shows" && row.service) {
+        try { await showEpisodes(row); } catch { /* the cron tries again */ }
+      }
     } catch (e) {
       // leave it unresolved; next request tries again
       errors?.push(`${w.key}: ${(e as Error).message}`);
@@ -131,13 +137,14 @@ export async function buildToday(now = new Date()): Promise<Today> {
   }
 
   const dayStart = new Date(`${date}T00:00:00`);
-  const [weather, eventsRaw, completions, cardRows, catalogRows, playing] = await Promise.all([
+  const [weather, eventsRaw, completions, cardRows, catalogRows, playing, withEpisodes] = await Promise.all([
     settle("weather", process.env.HOME_LATLON ? fetchWeather(process.env.HOME_LATLON, tz) : Promise.resolve(null), warnings),
     settle("calendar", fetchEvents(isoAtLocal(date, "00:00", tz), isoAtLocal(addDays(date, 2), "00:00", tz)), warnings),
     settle("jobs", getCompletions(weekStart(date, weekday), date), warnings),
     settle("cards", getCardRows(), warnings),
     sheet ? settle("catalog", syncCatalog(sheet), warnings) : Promise.resolve(null),
     fetchPlaying(warnings),
+    settle("episodes", getShowsWithEpisodes(), warnings),
   ]);
   void dayStart;
 
@@ -156,7 +163,7 @@ export async function buildToday(now = new Date()): Promise<Today> {
     jobs: sheet ? buildJobsBlocks(sheet.jobs, sheet.bounties, completions ?? new Set(), date, tz, now) : [],
     cards: cardRows ? activeCards(cardRows, now.toISOString()) : [],
     playing,
-    catalog: catalogRows && sheet ? toCatalogItems(catalogRows, sheet.services) : [],
+    catalog: catalogRows && sheet ? toCatalogItems(catalogRows, sheet.services, withEpisodes ?? undefined) : [],
     makes: sheet ? toMakes(sheet.makes) : [],
     warnings,
   };

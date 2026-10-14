@@ -127,13 +127,10 @@ class TvController(
     // it can press whatever the app has picked (Play, a profile) but never wander.
     suspend fun ok() = key(KeyCode.DPAD_CENTER)
     suspend fun playPause() = key(KeyCode.MEDIA_PLAY_PAUSE)
-    suspend fun volumeUp() = key(KeyCode.VOLUME_UP)
-    suspend fun volumeDown() = key(KeyCode.VOLUME_DOWN)
-
-    // Power is a toggle, so only send it when the TV says it is on.
-    suspend fun powerOff() {
-        if (session.value?.status?.value?.poweredOn == true) key(KeyCode.POWER)
-    }
+    // Media keys, like OK, can't move around the app's menus. Next skips to the
+    // next episode and Previous goes back to the start, in the apps that honour them.
+    suspend fun next() = key(KeyCode.MEDIA_NEXT)
+    suspend fun previous() = key(KeyCode.MEDIA_PREVIOUS)
 
     private suspend fun key(code: Int) {
         val s = session.value ?: return

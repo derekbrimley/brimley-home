@@ -50,6 +50,8 @@ object KeyCode {
     const val VOLUME_UP = 24
     const val VOLUME_DOWN = 25
     const val MEDIA_PLAY_PAUSE = 85
+    const val MEDIA_NEXT = 87
+    const val MEDIA_PREVIOUS = 88
     const val DPAD_CENTER = 23
 }
 

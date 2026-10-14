@@ -26,6 +26,14 @@ export async function setKv(key: string, value: unknown): Promise<void> {
 }
 
 
+// Source keys of shows whose cached episodes (kv episodes:<key>) have at least one
+// season. Reads only the first season's number, not the episode lists.
+export async function getShowsWithEpisodes(): Promise<Set<string>> {
+  const { data } = await supabaseAdmin().from("kv").select("key, first:value->seasons->0->number").like("key", "episodes:%");
+  const rows = (data ?? []) as unknown as { key: string; first: unknown }[];
+  return new Set(rows.filter((r) => r.first != null).map((r) => r.key.slice("episodes:".length)));
+}
+
 // ── catalog ──────────────────────────────────────────────────────────────────
 
 export async function getCatalogRows(): Promise<CatalogRow[]> {

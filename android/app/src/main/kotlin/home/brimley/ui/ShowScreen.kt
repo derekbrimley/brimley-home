@@ -61,8 +61,8 @@ import kotlinx.coroutines.launch
 
 // A show's own page: "Next up", the seasons and a tile per episode. Each tile
 // is a link straight to that episode, so the TV plays it instead of stopping on
-// the show's page. A show whose service has no per-episode links gets one big
-// Play for the show's link instead; debug builds say why.
+// the show's page. Only shows with `hasEpisodes` come here; if the episodes have
+// gone since, it falls back to one big Play for the show's link (debug builds say why).
 @Composable
 fun ShowScreen(
     item: CatalogItem,

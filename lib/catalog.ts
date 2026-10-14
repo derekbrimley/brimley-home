@@ -221,7 +221,8 @@ export interface CatalogRow {
 }
 
 // Items the tablet gets: resolved, on a paid service (or youtube/podcast), in sheet order.
-export function toCatalogItems(rows: CatalogRow[], paidServices: string[]): CatalogItem[] {
+// `withEpisodes` are the shows whose episodes can be picked one by one.
+export function toCatalogItems(rows: CatalogRow[], paidServices: string[], withEpisodes: Set<string> = new Set()): CatalogItem[] {
   const paid = new Set([...paidServices, "youtube", "podcast"]);
   return rows
     .filter((r) => r.service && paid.has(r.service))
@@ -233,6 +234,7 @@ export function toCatalogItems(rows: CatalogRow[], paidServices: string[]): Cata
       service: r.service!,
       serviceLabel: serviceLabel(r.service!),
       posterUrl: r.poster_url,
+      hasEpisodes: r.shelf === "shows" && withEpisodes.has(r.source_key),
       link: r.link,
       runtimeMinutes: r.runtime_minutes,
       year: r.year,

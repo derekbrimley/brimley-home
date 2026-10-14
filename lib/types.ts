@@ -42,6 +42,7 @@ export interface CatalogItem {
   serviceLabel: string;   // "Disney+"
   posterUrl: string | null;
   link: string | null;    // deep link for the TV, YouTube URL, or RSS feed URL
+  hasEpisodes: boolean;   // a show whose episodes each have their own link (GET /api/episodes)
   runtimeMinutes: number | null;
   year: number | null;
 }

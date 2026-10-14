@@ -74,22 +74,12 @@ class TvControllerTest {
         assertEquals(1, tv.sent.size)   // power only, no link
     }
 
-    @Test fun tvOffDoesNothingWhenTheTvIsAlreadyOffOrUnknown() = runTest {
-        for (initial in listOf(false, null)) {
-            val tv = FakeSession(on = initial)
-            val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
-            c.start(); runCurrent()
-            c.powerOff()
-            assertTrue(tv.sent.isEmpty())
-        }
-    }
-
-    @Test fun tvOffSendsPowerWhenOnAndForgetsTheTitle() = runTest {
+    @Test fun theTvTurningOffForgetsTheTitle() = runTest {
         val tv = FakeSession(on = true)
         val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
         c.start(); runCurrent()
         c.play(LINK, bluey)
-        c.powerOff(); runCurrent()
+        tv.status.value = tv.status.value.copy(poweredOn = false); runCurrent()
         assertEquals(TvState.Off, c.state.value)
         tv.status.value = tv.status.value.copy(poweredOn = true); runCurrent()
         assertEquals(TvState.On(null, null), c.state.value)
@@ -162,7 +152,7 @@ class TvControllerTest {
         val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
         c.start(); runCurrent()
         tv.sendsFail = true
-        c.volumeUp(); c.volumeDown(); c.playPause(); c.powerOff()   // must not throw
+        c.ok(); c.playPause(); c.next(); c.previous()   // must not throw
     }
 
     @Test fun playWaitsLongEnoughForANewAddressToBeFound() = runTest {
@@ -187,6 +177,15 @@ class TvControllerTest {
         tv.status.value = tv.status.value.copy(appPackage = "com.wbd.stream"); runCurrent()
         advanceTimeBy(60_000); runCurrent()
         assertEquals(0, tv.oks())
+    }
+
+    @Test fun nextAndPreviousSendTheMediaKeys() = runTest {
+        val tv = FakeSession(on = true)
+        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
+        c.start(); runCurrent()
+        c.next(); c.previous()
+        assertTrue(tv.sent.last().contentEquals(RemoteMessages.key(KeyCode.MEDIA_PREVIOUS)))
+        assertTrue(tv.sent[tv.sent.size - 2].contentEquals(RemoteMessages.key(KeyCode.MEDIA_NEXT)))
     }
 
     @Test fun okSendsTheCentreButton() = runTest {
