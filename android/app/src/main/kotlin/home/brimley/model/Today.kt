@@ -57,6 +57,10 @@ data class ShowEpisode(val number: Int, val title: String, val link: String, val
 @Serializable
 data class ShowSeason(val number: Int, val episodes: List<ShowEpisode>)
 
+// The /api/episodes body. `note` says why there are no seasons (TV test screen).
+@Serializable
+data class ShowEpisodes(val seasons: List<ShowSeason> = emptyList(), val note: String? = null)
+
 @Serializable
 data class Card(
     val id: Int,

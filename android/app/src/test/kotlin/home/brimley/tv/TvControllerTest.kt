@@ -49,7 +49,7 @@ private class MemoryStore(override var host: String? = "10.0.0.5", override var 
 }
 
 private val bluey = StartedTitle("Bluey", "Disney+", null)
-private const val LINK = "https://www.disneyplus.com/series/bluey/1"
+private const val LINK = "https://www.youtube.com/watch?v=abc"   // an app that plays on its own
 private const val MAX_LINK = "https://play.max.com/movie/abc"
 
 @OptIn(ExperimentalCoroutinesApi::class)

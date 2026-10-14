@@ -85,17 +85,25 @@ export async function tmdb<T>(path: string, params: Record<string, string> = {})
 
 export const JUSTWATCH_URL = "https://apis.justwatch.com/graphql";
 
-// One JustWatch GraphQL call; null on any failure (the endpoint is undocumented).
+// One JustWatch GraphQL call. The endpoint is undocumented, so a failure says
+// what JustWatch answered (HTTP status or its first GraphQL error).
+export async function justwatchOrThrow<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+  const res = await fetch(JUSTWATCH_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "User-Agent": "brimley-home/0.1" },
+    body: JSON.stringify({ query, variables }),
+  });
+  if (!res.ok) throw new Error(`JustWatch ${res.status}`);
+  const j = (await res.json()) as { data?: T | null; errors?: { message?: string }[] };
+  if (j.errors?.length) throw new Error(`JustWatch: ${j.errors[0].message ?? "error"}`);
+  if (!j.data) throw new Error("JustWatch sent no data");
+  return j.data;
+}
+
+// The same, null on any failure.
 export async function justwatch<T>(query: string, variables: Record<string, unknown>): Promise<T | null> {
   try {
-    const res = await fetch(JUSTWATCH_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "User-Agent": "brimley-home/0.1" },
-      body: JSON.stringify({ query, variables }),
-    });
-    if (!res.ok) return null;
-    const j = (await res.json()) as { data?: T };
-    return j.data ?? null;
+    return await justwatchOrThrow<T>(query, variables);
   } catch {
     return null;
   }

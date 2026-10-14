@@ -49,9 +49,6 @@ import home.brimley.audio.Podcast
 import home.brimley.audio.PodcastFeeds
 import home.brimley.audio.PodcastPlayer
 import home.brimley.audio.storyQueue
-import home.brimley.tv.EpisodeRef
-import home.brimley.tv.Episodes
-import home.brimley.tv.LastEpisodeStore
 import home.brimley.tv.StartedTitle
 import home.brimley.tv.TvController
 import home.brimley.tv.TvNotPaired
@@ -59,8 +56,6 @@ import home.brimley.tv.TvState
 import home.brimley.model.CatalogItem
 import home.brimley.model.MusicItem
 import home.brimley.model.MusicShelf
-import home.brimley.model.ShowEpisode
-import home.brimley.model.ShowSeason
 import home.brimley.model.Stories
 import home.brimley.model.StoryCard
 import home.brimley.model.YotoPlayer
@@ -86,7 +81,7 @@ fun PlayScreen(
     tv: TvController,
     podcasts: PodcastPlayer,
     feeds: PodcastFeeds,
-    lastEpisodes: LastEpisodeStore,
+    onOpenShow: (CatalogItem) -> Unit,
     onSetUpTv: () -> Unit,
     onTvDebug: () -> Unit,
     initialTab: PlayTab,
@@ -107,13 +102,13 @@ fun PlayScreen(
     val scope = rememberCoroutineScope()
 
     // Start a link on the TV from the Watch sheet; it stays open with the reason if that fails.
-    fun startOnTv(link: String, started: StartedTitle, episode: Boolean, onStarted: () -> Unit = {}) {
+    fun startOnTv(link: String, started: StartedTitle) {
         if (tv.state.value == TvState.NotPaired) { pending = null; onSetUpTv(); return }
         starting = true
         tvStatus = "Starting on the TV…"
         scope.launch {
-            tv.play(link, started, episode)
-                .onSuccess { onStarted(); pending = null; onHome() }
+            tv.play(link, started)
+                .onSuccess { pending = null; onHome() }
                 .onFailure { tvStatus = if (it is TvNotPaired) "The TV isn't set up yet" else it.message ?: "Couldn't reach the TV" }
             starting = false
         }
@@ -160,7 +155,9 @@ fun PlayScreen(
 
         Box(Modifier.fillMaxSize()) {
             when (tab) {
-                PlayTab.Watch -> WatchShelves(today?.catalog.orEmpty().filter { !it.link.isNullOrBlank() }, onPick = { pending = it; tvStatus = null })
+                PlayTab.Watch -> WatchShelves(today?.catalog.orEmpty().filter { !it.link.isNullOrBlank() }, onPick = {
+                    if (it.shelf == "shows") onOpenShow(it) else { pending = it; tvStatus = null }
+                })
                 PlayTab.Music -> MusicShelves(
                     shelves = shelves,
                     error = musicError,
@@ -184,20 +181,9 @@ fun PlayScreen(
                         onHome()
                     })
                 } else {
-                    val playShow = { startOnTv(item.link!!, StartedTitle(item.title, item.serviceLabel, item.posterUrl), episode = false) }
-                    if (item.shelf == "shows") {
-                        ShowSheet(
-                            item, repository, last = lastEpisodes.get(item.id), status = tvStatus, busy = starting,
-                            onCancel = { pending = null },
-                            onPlayShow = playShow,
-                            onPlayEpisode = { season, ep ->
-                                val started = StartedTitle("${item.title} · S${season.number} E${ep.number}", item.serviceLabel, ep.stillUrl ?: item.posterUrl)
-                                startOnTv(ep.link, started, episode = true) { lastEpisodes.set(item.id, EpisodeRef(season.number, ep.number)) }
-                            },
-                        )
-                    } else {
-                        ConfirmPlay(item, status = tvStatus, busy = starting, onCancel = { pending = null }, onPlay = playShow)
-                    }
+                    ConfirmPlay(item, status = tvStatus, busy = starting, onCancel = { pending = null }, onPlay = {
+                        startOnTv(item.link!!, StartedTitle(item.title, item.serviceLabel, item.posterUrl))
+                    })
                 }
             }
             story?.let { card ->
@@ -368,144 +354,6 @@ private fun ConfirmPlay(item: CatalogItem, status: String?, busy: Boolean, onCan
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             InkButton("Not now", onClick = onCancel, filled = false, modifier = Modifier.weight(1f))
             InkButton(if (status != null && !busy) "Try again" else "Play", onClick = { if (!busy) onPlay() }, modifier = Modifier.weight(1f))
-        }
-    }
-}
-
-// A show: pick the episode on the tablet, so the TV starts it rather than
-// stopping on the show's page. "Next up" follows the last one started here.
-// Shows with no per-episode links (or when the lookup fails) get the old sheet.
-@Composable
-private fun ShowSheet(
-    item: CatalogItem,
-    repository: TodayRepository,
-    last: EpisodeRef?,
-    status: String?,
-    busy: Boolean,
-    onCancel: () -> Unit,
-    onPlayShow: () -> Unit,
-    onPlayEpisode: (ShowSeason, ShowEpisode) -> Unit,
-) {
-    var seasons by remember(item.id) { mutableStateOf<List<ShowSeason>?>(null) }
-    LaunchedEffect(item.id) { seasons = repository.episodes(item.id).getOrDefault(emptyList()) }
-    val list = seasons
-    if (list == null) {
-        Sheet(onCancel) {
-            Text(item.title, style = MaterialTheme.typography.headlineMedium, color = Ink)
-            Text("Finding the episodes…", style = MaterialTheme.typography.titleMedium, color = Ink, modifier = Modifier.padding(top = 14.dp))
-            Spacer(Modifier.height(22.dp))
-            InkButton("Not now", onClick = onCancel, filled = false, modifier = Modifier.fillMaxWidth())
-        }
-        return
-    }
-    if (list.isEmpty()) {
-        ConfirmPlay(item, status = status, busy = busy, onCancel = onCancel, onPlay = onPlayShow)
-        return
-    }
-    val next = remember(list, last) { Episodes.next(list, last) }
-    var shown by remember(list) { mutableStateOf(Episodes.openingSeason(list, last)?.number ?: list.first().number) }
-    val season = list.firstOrNull { it.number == shown } ?: list.first()
-    val play = { s: ShowSeason, e: ShowEpisode -> if (!busy) onPlayEpisode(s, e) }
-
-    Sheet(onCancel, width = 1100.dp) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(item.title, style = MaterialTheme.typography.headlineMedium, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(status ?: "${item.serviceLabel} · Pick an episode for the living room TV", style = MaterialTheme.typography.bodyMedium, color = Ink, modifier = Modifier.padding(top = 4.dp))
-            }
-            Spacer(Modifier.width(18.dp))
-            InkButton("Not now", onClick = onCancel, filled = false)
-        }
-        next?.let { up ->
-            Spacer(Modifier.height(18.dp))
-            NextUpRow(up.season, up.episode, onClick = { play(up.season, up.episode) })
-        }
-        if (list.size > 1) {
-            Spacer(Modifier.height(18.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(list, key = { it.number }) { s ->
-                    val on = s.number == season.number
-                    Box(
-                        Modifier
-                            .heightIn(min = 64.dp)
-                            .clip(PillShape)
-                            .background(if (on) Ink else Paper)
-                            .border(BorderStroke(Rules.thin, Ink), PillShape)
-                            .clickable { shown = s.number }
-                            .padding(horizontal = 24.dp),
-                        contentAlignment = Alignment.Center,
-                    ) { Text("Season ${s.number}", style = MaterialTheme.typography.labelLarge, color = if (on) Paper else Ink) }
-                }
-            }
-        }
-        Spacer(Modifier.height(18.dp))
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(220.dp),
-            modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
-            horizontalArrangement = Arrangement.spacedBy(18.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-        ) {
-            gridItems(season.episodes, key = { "${season.number}-${it.number}" }) { ep ->
-                val wasLast = last != null && last.season == season.number && last.episode == ep.number
-                EpisodeTile(ep, wasLast, onClick = { play(season, ep) })
-            }
-        }
-    }
-}
-
-// The big "carry on" button: the next episode's picture, number and name.
-@Composable
-private fun NextUpRow(season: ShowSeason, ep: ShowEpisode, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(20.dp)
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(Ink)
-            .clickable(onClick = onClick)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        EpisodePicture(ep, Modifier.width(200.dp), ink = Paper)
-        Spacer(Modifier.width(20.dp))
-        Column(Modifier.weight(1f)) {
-            Text("Next up · Season ${season.number}, episode ${ep.number}", style = MaterialTheme.typography.labelLarge, color = Paper)
-            Text(ep.title, style = MaterialTheme.typography.titleLarge, color = Paper, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        }
-        Spacer(Modifier.width(14.dp))
-        Text("Play ▶", style = MaterialTheme.typography.titleLarge, color = Paper)
-    }
-}
-
-@Composable
-private fun EpisodeTile(ep: ShowEpisode, wasLast: Boolean, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Box {
-            EpisodePicture(ep, Modifier.fillMaxWidth())
-            if (wasLast) Pill("LAST TIME", filled = true, modifier = Modifier.align(Alignment.TopStart).padding(8.dp))
-        }
-        Spacer(Modifier.height(6.dp))
-        Text("Episode ${ep.number}", style = MaterialTheme.typography.labelLarge, color = Ink)
-        Text(ep.title, style = MaterialTheme.typography.bodyMedium, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
-    }
-}
-
-// TMDB's still, or the episode number large when there isn't one.
-@Composable
-private fun EpisodePicture(ep: ShowEpisode, modifier: Modifier, ink: androidx.compose.ui.graphics.Color = Ink) {
-    val shape = RoundedCornerShape(14.dp)
-    Box(
-        modifier
-            .aspectRatio(16f / 9f)
-            .clip(shape)
-            .background(PaperBright)
-            .border(BorderStroke(4.dp, ink), shape),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (ep.stillUrl != null) {
-            AsyncImage(model = ep.stillUrl, contentDescription = ep.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        } else {
-            Text("${ep.number}", style = MaterialTheme.typography.displayLarge, color = Ink)
         }
     }
 }

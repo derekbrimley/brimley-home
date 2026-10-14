@@ -3,9 +3,9 @@
 // on our service; TMDB adds a still so the tiles read without reading. Cached
 // a day in `kv` (episodes:<source_key>); the daily cron warms every show.
 import type { CatalogRow, JWOffer, TmdbResult } from "./catalog";
-import { bestTmdbResult, justwatch, justwatchTitle, pickOffer, tmdb } from "./catalog";
+import { bestTmdbResult, justwatchOrThrow, justwatchTitle, pickOffer, serviceLabel, tmdb } from "./catalog";
 import { getKv, setKv } from "./queries";
-import type { ShowSeason } from "./types";
+import type { ShowEpisodes, ShowSeason } from "./types";
 
 const STALE_MS = 24 * 60 * 60 * 1000;
 
@@ -49,6 +49,20 @@ export function buildSeasons(episodes: JWEpisode[], service: string, stills: Tmd
     .filter((s) => s.episodes.length > 0);
 }
 
+// Pure: why a show ended up with no episodes, in a line a parent can act on.
+// Shown on the tablet's TV test screen and in the cron summary.
+export function explainEmpty(episodes: JWEpisode[], service: string): string {
+  const label = serviceLabel(service);
+  const numbered = episodes.filter((e) => e.season && e.episode);
+  if (numbered.length === 0) return "JustWatch lists no episodes for this show";
+  const links = numbered.map((e) => pickOffer(e.offers, service)).filter((l): l is string => !!l);
+  if (links.length === 0) return `JustWatch has no ${label} links for its ${numbered.length} episodes`;
+  const counts = new Map<string, number>();
+  for (const l of links) counts.set(l, (counts.get(l) ?? 0) + 1);
+  const [top, n] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  return `${n} of ${links.length} ${label} episode links are the same page: ${top}`;
+}
+
 const SEASONS_QUERY = `query Seasons($nodeId: ID!, $country: Country!, $language: Language!) {
   node(id: $nodeId) { ... on Show {
     seasons(sortDirection: ASC) { id content(country: $country, language: $language) { ... on SeasonContent { seasonNumber } } }
@@ -69,12 +83,10 @@ async function justwatchEpisodes(title: string, year: number | null, country: st
   const show = await justwatchTitle(title, year, country);
   if (!show) throw new Error("JustWatch doesn't know this show");
   // A failed call throws rather than return a short list, so it isn't cached for a day.
-  const data = await justwatch<JWSeasonsData>(SEASONS_QUERY, { nodeId: show.id, country, language: "en" });
-  if (!data) throw new Error("JustWatch didn't answer for the seasons");
+  const data = await justwatchOrThrow<JWSeasonsData>(SEASONS_QUERY, { nodeId: show.id, country, language: "en" });
   const wanted = (data.node?.seasons ?? []).filter((s) => (s.content?.seasonNumber ?? 0) > 0);
   const lists = await Promise.all(wanted.map(async (s) => {
-    const page = await justwatch<JWEpisodesData>(EPISODES_QUERY, { nodeId: s.id, country, language: "en" });
-    if (!page) throw new Error("JustWatch didn't answer for a season");
+    const page = await justwatchOrThrow<JWEpisodesData>(EPISODES_QUERY, { nodeId: s.id, country, language: "en" });
     return (page.node?.episodes ?? []).map((e) => ({
       season: e.content?.seasonNumber ?? s.content?.seasonNumber ?? null,
       episode: e.content?.episodeNumber ?? null,
@@ -102,32 +114,34 @@ async function tmdbStills(title: string, seasons: number[]): Promise<TmdbStills>
   return out;
 }
 
-async function fetchSeasons(row: CatalogRow, service: string, country: string): Promise<ShowSeason[]> {
+async function fetchEpisodes(row: CatalogRow, service: string, country: string): Promise<ShowEpisodes> {
   const episodes = await justwatchEpisodes(row.title, row.year, country);
   const numbers = [...new Set(episodes.map((e) => e.season).filter((n): n is number => !!n))];
-  return buildSeasons(episodes, service, await tmdbStills(row.title, numbers));
+  const seasons = buildSeasons(episodes, service, await tmdbStills(row.title, numbers));
+  return { seasons, note: seasons.length ? null : explainEmpty(episodes, service) };
 }
 
-interface CachedSeasons { fetchedAt: string; service: string; seasons: ShowSeason[] }
+interface CachedSeasons { fetchedAt: string; service: string; seasons: ShowSeason[]; note?: string | null }
 
 export function episodesKey(sourceKey: string): string {
   return `episodes:${sourceKey}`;
 }
 
 // Cached seasons while fresh; a failed refresh falls back to the stale copy.
-export async function showSeasons(row: CatalogRow, opts: { force?: boolean } = {}): Promise<ShowSeason[]> {
+export async function showEpisodes(row: CatalogRow, opts: { force?: boolean } = {}): Promise<ShowEpisodes> {
   const service = row.service;
-  if (row.shelf !== "shows" || !service) return [];
+  if (row.shelf !== "shows" || !service) return { seasons: [], note: "Not a show on a paid service" };
   const key = episodesKey(row.source_key);
   const cached = await getKv<CachedSeasons>(key);
   const usable = cached && cached.service === service ? cached : null;
-  if (!opts.force && usable && Date.now() - Date.parse(usable.fetchedAt) < STALE_MS) return usable.seasons;
+  const fromCache = (c: CachedSeasons): ShowEpisodes => ({ seasons: c.seasons, note: c.note ?? null });
+  if (!opts.force && usable && Date.now() - Date.parse(usable.fetchedAt) < STALE_MS) return fromCache(usable);
   try {
-    const seasons = await fetchSeasons(row, service, process.env.TMDB_REGION ?? "US");
-    await setKv(key, { fetchedAt: new Date().toISOString(), service, seasons } satisfies CachedSeasons);
-    return seasons;
+    const out = await fetchEpisodes(row, service, process.env.TMDB_REGION ?? "US");
+    await setKv(key, { fetchedAt: new Date().toISOString(), service, ...out } satisfies CachedSeasons);
+    return out;
   } catch (e) {
-    if (usable) return usable.seasons;
+    if (usable) return fromCache(usable);
     throw e;
   }
 }

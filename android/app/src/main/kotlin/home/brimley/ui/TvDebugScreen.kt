@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import home.brimley.data.TodayRepository
 import home.brimley.model.CatalogItem
 import home.brimley.tv.StartedTitle
 import home.brimley.tv.TvController
@@ -32,11 +33,14 @@ import home.brimley.ui.theme.Paper
 import kotlinx.coroutines.launch
 
 // Debug builds only: send each catalog link to the TV to check it opens the
-// right title on that service.
+// right title on that service. For shows, "Episodes" asks /api/episodes and
+// says how many it found (or why none), with the first episode's link to send.
 @Composable
-fun TvDebugScreen(catalog: List<CatalogItem>, tv: TvController, onHome: () -> Unit, onPair: () -> Unit) {
+fun TvDebugScreen(catalog: List<CatalogItem>, tv: TvController, repository: TodayRepository, onHome: () -> Unit, onPair: () -> Unit) {
     val state by tv.state.collectAsState()
     val results = remember { mutableStateMapOf<String, String>() }
+    val episodeLines = remember { mutableStateMapOf<String, String>() }
+    val firstEpisode = remember { mutableStateMapOf<String, String>() }
     val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxSize().background(Paper)) {
         Row(Modifier.fillMaxWidth().height(120.dp).background(Ink).padding(horizontal = 30.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -55,6 +59,29 @@ fun TvDebugScreen(catalog: List<CatalogItem>, tv: TvController, onHome: () -> Un
                         Text("${item.title} · ${item.serviceLabel}", style = MaterialTheme.typography.titleMedium, color = Ink)
                         Text(item.link!!, style = MaterialTheme.typography.bodyMedium, color = Ink)
                         results[item.id]?.let { Text(it, style = MaterialTheme.typography.labelLarge, color = Ink) }
+                        episodeLines[item.id]?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Ink) }
+                    }
+                    if (item.shelf == "shows") {
+                        InkButton("Episodes", filled = false, onClick = {
+                            episodeLines[item.id] = "Asking…"
+                            scope.launch {
+                                episodeLines[item.id] = repository.episodes(item.id).fold({ e ->
+                                    val first = e.seasons.firstOrNull()?.let { s -> s.episodes.firstOrNull()?.let { s to it } }
+                                    first?.let { (_, ep) -> firstEpisode[item.id] = ep.link }
+                                    if (first == null) "No episodes: ${e.note ?: "no reason given"}"
+                                    else "${e.seasons.sumOf { it.episodes.size }} episodes in ${e.seasons.size} seasons. S${first.first.number} E${first.second.number}: ${first.second.link}"
+                                }, { "Failed: ${it.message}" })
+                            }
+                        })
+                    }
+                    firstEpisode[item.id]?.let { link ->
+                        InkButton("Send E1", filled = false, onClick = {
+                            results[item.id] = "Sending episode…"
+                            scope.launch {
+                                results[item.id] = tv.play(link, StartedTitle(item.title, item.serviceLabel, item.posterUrl), episode = true)
+                                    .fold({ "Sent episode" }, { it.message ?: "Failed" })
+                            }
+                        })
                     }
                     InkButton("Send", onClick = {
                         results[item.id] = "Sending…"

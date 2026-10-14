@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { showSeasons } from "../../lib/episodes";
+import { showEpisodes } from "../../lib/episodes";
 import { freshSheet, syncCatalog } from "../../lib/today";
 import { isYotoConfigured, refreshStories } from "../../lib/yoto";
 
@@ -18,10 +18,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (isYotoConfigured()) {
     try { stories = await refreshStories(); } catch (e) { errors.push(`yoto: ${(e as Error).message}`); }
   }
-  let episodes = 0;
+  const episodes: Record<string, number | string> = {};
   for (const row of rows.filter((r) => r.shelf === "shows" && r.service)) {
-    try { episodes += (await showSeasons(row, { force: true })).reduce((n, s) => n + s.episodes.length, 0); }
-    catch (e) { errors.push(`episodes ${row.source_key}: ${(e as Error).message}`); }
+    try {
+      const { seasons, note } = await showEpisodes(row, { force: true });
+      episodes[row.title] = note ?? seasons.reduce((n, s) => n + s.episodes.length, 0);
+    } catch (e) { errors.push(`episodes ${row.source_key}: ${(e as Error).message}`); }
   }
   const summary = {
     ok: errors.length === 0,

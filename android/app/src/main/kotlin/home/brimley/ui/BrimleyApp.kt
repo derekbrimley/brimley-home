@@ -26,6 +26,7 @@ import java.time.LocalTime
 sealed interface Screen {
     data object Home : Screen
     data class Play(val tab: PlayTab) : Screen
+    data class Show(val item: home.brimley.model.CatalogItem) : Screen
     data class Note(val back: Screen = Home) : Screen
     data object Fridge : Screen
     data class OpenMake(val make: home.brimley.model.Make) : Screen
@@ -87,14 +88,23 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
                 tv = tv,
                 podcasts = podcasts,
                 feeds = feeds,
-                lastEpisodes = lastEpisodes,
+                onOpenShow = { screen = Screen.Show(it) },
                 onSetUpTv = { screen = Screen.TvPair },
                 onTvDebug = { screen = Screen.TvDebug },
                 initialTab = s.tab,
                 onHome = { screen = Screen.Home },
             )
+            is Screen.Show -> ShowScreen(
+                item = s.item,
+                repository = repository,
+                tv = tv,
+                lastEpisodes = lastEpisodes,
+                onBack = { screen = Screen.Play(PlayTab.Watch) },
+                onStarted = { screen = Screen.Home },
+                onSetUpTv = { screen = Screen.TvPair },
+            )
             Screen.TvPair -> PairScreen(tv = tv, onDone = { screen = Screen.Home })
-            Screen.TvDebug -> TvDebugScreen(catalog = state.today?.catalog.orEmpty(), tv = tv, onHome = { screen = Screen.Home }, onPair = { screen = Screen.TvPair })
+            Screen.TvDebug -> TvDebugScreen(catalog = state.today?.catalog.orEmpty(), tv = tv, repository = repository, onHome = { screen = Screen.Home }, onPair = { screen = Screen.TvPair })
             is Screen.Note -> NoteScreen(
                 onCancel = { screen = s.back },
                 onSave = { png -> repository.postNote(png) },

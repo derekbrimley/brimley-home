@@ -3,7 +3,7 @@ package home.brimley.data
 import home.brimley.model.FridgeNote
 import home.brimley.model.MusicShelf
 import home.brimley.model.Playing
-import home.brimley.model.ShowSeason
+import home.brimley.model.ShowEpisodes
 import home.brimley.model.Stories
 import home.brimley.model.StoryTrack
 import home.brimley.model.Today
@@ -121,9 +121,9 @@ class TodayRepository(private val api: HomeApi, cacheDir: File, private val wake
         scope.launch { runCatching { api.claimBounty(row) }.onFailure { refresh() } }
     }
 
-    // A show's episodes, fetched when its sheet opens. Empty means "open the show's page".
-    suspend fun episodes(catalogId: String): Result<List<ShowSeason>> =
-        if (!api.isConfigured) Result.success(emptyList()) else runCatching { api.episodes(catalogId) }
+    // A show's episodes, fetched when its page opens. No seasons means "open the show's page".
+    suspend fun episodes(catalogId: String): Result<ShowEpisodes> =
+        if (!api.isConfigured) Result.success(ShowEpisodes(note = "Not connected")) else runCatching { api.episodes(catalogId) }
 
     suspend fun musicShelves(): Result<List<MusicShelf>> =
         if (!api.isConfigured) Result.success(SampleToday.shelves()) else runCatching { api.musicShelves() }
