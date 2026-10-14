@@ -1,5 +1,7 @@
 package home.brimley.ui.cards
 
+// Kept for now; the home screen uses MusicCard, WatchCard and YotoCard (PlayCards.kt).
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -67,7 +69,7 @@ fun PlayingCard(
 }
 
 @Composable
-private fun Controls(p: Playing, onControl: (String, String) -> Unit) {
+internal fun Controls(p: Playing, onControl: (String, String) -> Unit) {
     if (p.target == "tv") return TvControls(onControl)
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         when (p.target) {
@@ -104,10 +106,10 @@ private fun TvControls(onControl: (String, String) -> Unit) {
 }
 
 @Composable
-private fun Label(text: String, c: androidx.compose.ui.graphics.Color) = Text(text, style = MaterialTheme.typography.labelLarge, color = c)
+internal fun Label(text: String, c: androidx.compose.ui.graphics.Color) = Text(text, style = MaterialTheme.typography.labelLarge, color = c)
 
 @Composable
-private fun PlayPauseIcon(c: androidx.compose.ui.graphics.Color) = Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+internal fun PlayPauseIcon(c: androidx.compose.ui.graphics.Color) = Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
     androidx.compose.foundation.Canvas(Modifier.size(14.dp)) {
         drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(0f, 0f); lineTo(size.width, size.height / 2f); lineTo(0f, size.height); close() }, c)
     }
@@ -115,7 +117,7 @@ private fun PlayPauseIcon(c: androidx.compose.ui.graphics.Color) = Row(horizonta
 }
 
 @Composable
-private fun RoundButton(filled: Boolean, onClick: () -> Unit, icon: @Composable (androidx.compose.ui.graphics.Color) -> Unit) {
+internal fun RoundButton(filled: Boolean, onClick: () -> Unit, icon: @Composable (androidx.compose.ui.graphics.Color) -> Unit) {
     Box(
         Modifier
             .size(64.dp)
@@ -128,13 +130,13 @@ private fun RoundButton(filled: Boolean, onClick: () -> Unit, icon: @Composable 
 }
 
 @Composable
-private fun PlayIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(22.dp)) {
+internal fun PlayIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(22.dp)) {
     val p = androidx.compose.ui.graphics.Path().apply { moveTo(size.width * 0.2f, 0f); lineTo(size.width, size.height / 2f); lineTo(size.width * 0.2f, size.height); close() }
     drawPath(p, c)
 }
 
 @Composable
-private fun PauseIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(22.dp)) {
+internal fun PauseIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(22.dp)) {
     drawRect(c, topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.1f, 0f), size = androidx.compose.ui.geometry.Size(size.width * 0.3f, size.height))
     drawRect(c, topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.6f, 0f), size = androidx.compose.ui.geometry.Size(size.width * 0.3f, size.height))
 }
@@ -165,10 +167,10 @@ private fun NothingPlaying() {
     }
 }
 
-private fun whereLabel(p: Playing) = when (p.target) { "kitchen", "podcast" -> "Kitchen speaker"; "tv" -> "Living room TV"; else -> "Yoto" }
+internal fun whereLabel(p: Playing) = when (p.target) { "kitchen", "podcast" -> "Kitchen speaker"; "tv" -> "Living room TV"; else -> "Yoto" }
 
 @Composable
-private fun Cover(p: Playing, size: androidx.compose.ui.unit.Dp) {
+internal fun Cover(p: Playing, size: androidx.compose.ui.unit.Dp) {
     Box(
         Modifier
             .size(size)
@@ -231,6 +233,6 @@ private fun CompactPlaying(p: Playing, onControl: (String, String) -> Unit) {
 }
 
 @Composable
-private fun StopIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(20.dp)) {
+internal fun StopIcon(c: androidx.compose.ui.graphics.Color) = androidx.compose.foundation.Canvas(Modifier.size(20.dp)) {
     drawRect(c)
 }

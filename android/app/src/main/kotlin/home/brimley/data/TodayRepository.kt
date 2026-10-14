@@ -28,6 +28,8 @@ data class HomeState(
     val loading: Boolean = true,
     val error: String? = null,
     val celebrateKid: String? = null,   // set for ~3s when a kid's last job is ticked
+    val crate: MusicShelf? = null,      // the one crate the Music card shows
+    val crateError: String? = null,
 )
 
 // One source of truth for the screen. Polls /api/today every minute (and
@@ -47,7 +49,7 @@ class TodayRepository(private val api: HomeApi, cacheDir: File, private val wake
     init {
         readCache()?.let { _state.update { s -> s.copy(today = it, loading = false) } }
         if (!api.isConfigured) {
-            _state.update { it.copy(today = it.today ?: SampleToday.today(), loading = false, error = "Not connected: set home.apiBase and home.apiToken") }
+            _state.update { it.copy(today = it.today ?: SampleToday.today(), crate = SampleToday.shelves().first(), loading = false, error = "Not connected: set home.apiBase and home.apiToken") }
         }
     }
 
@@ -56,6 +58,7 @@ class TodayRepository(private val api: HomeApi, cacheDir: File, private val wake
         poller = scope.launch {
             while (isActive) {
                 refresh()
+                refreshCrateIfStale()
                 delay(intervalMs)
             }
         }
@@ -75,6 +78,21 @@ class TodayRepository(private val api: HomeApi, cacheDir: File, private val wake
         runCatching { api.playing() }.onSuccess { playing ->
             _state.update { s -> s.today?.let { s.copy(today = it.copy(playing = playing)) } ?: s }
         }
+    }
+
+    // The crate's order is Crate's weighted shuffle, so it is fetched once an
+    // hour, not every minute: the albums shouldn't jump around under a finger.
+    private var crateLoadedAt = 0L
+
+    private suspend fun refreshCrateIfStale() {
+        val now = System.currentTimeMillis()
+        if (_state.value.crate != null && now - crateLoadedAt < 60 * 60_000L) return
+        runCatching { api.homeCrate() }
+            .onSuccess { c ->
+                crateLoadedAt = now
+                _state.update { it.copy(crate = c ?: MusicShelf("none", "Music", emptyList()), crateError = null) }
+            }
+            .onFailure { e -> _state.update { it.copy(crateError = e.message ?: "Couldn't reach Crate") } }
     }
 
     suspend fun refresh() {

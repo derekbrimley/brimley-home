@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { noDeviceMessage, pickDevice, toPlaying, toShelves } from "./crate";
+import { noDeviceMessage, pickCrate, pickDevice, toPlaying, toShelves } from "./crate";
 
 describe("toPlaying", () => {
   it("prefers the album over the track for the title", () => {
@@ -27,6 +27,24 @@ describe("toShelves", () => {
       ],
     });
     expect(shelves.map((s) => [s.name, s.items.map((i) => i.title)])).toEqual([["Favorites", ["Blue"]], ["Something new", ["Pink Moon"]]]);
+  });
+});
+
+describe("pickCrate", () => {
+  const item = { id: 1, title: "Blue", creator: "Joni Mitchell", imageUrl: null, uri: "spotify:album:b", mediaType: "album" };
+  const shelves = [
+    { id: "empty", name: "Empty", items: [] },
+    { id: "fav", name: "Favorites", items: [item] },
+    { id: "kids", name: "Kids' Kitchen", items: [item] },
+  ];
+  it("finds HOME_CRATE by name or id, ignoring case", () => {
+    expect(pickCrate(shelves, "kids' kitchen")?.id).toBe("kids");
+    expect(pickCrate(shelves, "KIDS")?.id).toBe("kids");
+  });
+  it("falls back to the first crate with albums in it", () => {
+    expect(pickCrate(shelves, undefined)?.id).toBe("fav");
+    expect(pickCrate(shelves, "nope")?.id).toBe("fav");
+    expect(pickCrate([], undefined)).toBeNull();
   });
 });
 
