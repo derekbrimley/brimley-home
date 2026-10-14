@@ -46,6 +46,20 @@ export interface CatalogItem {
   year: number | null;
 }
 
+// A show's episodes, from GET /api/episodes?id=<catalog id>. Only episodes with
+// their own link on the show's service; the tablet opens that link on the TV.
+export interface ShowEpisode {
+  number: number;
+  title: string;
+  link: string;
+  stillUrl: string | null;
+}
+
+export interface ShowSeason {
+  number: number;
+  episodes: ShowEpisode[];
+}
+
 export interface Card {
   id: number;
   kind: string;           // lunch_menu | note | drawing | countdown | birthday

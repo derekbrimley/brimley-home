@@ -18,4 +18,13 @@ class AutoPlayTest {
         assertNull(AutoPlay.forLink("https://notmax.com/movie/abc"))
         assertNull(AutoPlay.forLink("not a link"))
     }
+
+    @Test fun episodeLinksSkipThePlayPress() {
+        val max = AutoPlay.forLink("https://play.max.com/video/watch/abc")!!
+        assertEquals(listOf(5_000L), max.delays(warm = false, episode = true))
+        assertEquals(emptyList<Long>(), max.delays(warm = true, episode = true))
+        assertEquals(listOf(5_000L, 4_000L), max.delays(warm = false, episode = false))
+        val prime = AutoPlay.forLink("https://www.amazon.com/gp/video/detail/B0ABC")!!
+        assertEquals(prime.delays(warm = false, episode = false), prime.delays(warm = false, episode = true))
+    }
 }

@@ -4,6 +4,7 @@ import home.brimley.model.FridgeNote
 import home.brimley.model.FridgeNotes
 import home.brimley.model.MusicShelf
 import home.brimley.model.Playing
+import home.brimley.model.ShowSeason
 import home.brimley.model.Stories
 import home.brimley.model.StoryTrack
 import home.brimley.model.Today
@@ -58,6 +59,15 @@ class HomeApi(private val baseUrl: String, private val token: String) {
             val body = res.body?.string().orEmpty()
             if (!res.isSuccessful) throw ApiException(errorMessage(body) ?: "music ${res.code}")
             json.decodeFromString(ShelvesResponse.serializer(), body).shelves
+        }
+    }
+
+    suspend fun episodes(catalogId: String): List<ShowSeason> = withContext(Dispatchers.IO) {
+        val id = java.net.URLEncoder.encode(catalogId, "UTF-8")
+        client.newCall(request("/api/episodes?id=$id").get().build()).execute().use { res ->
+            val body = res.body?.string().orEmpty()
+            if (!res.isSuccessful) throw ApiException(errorMessage(body) ?: "episodes ${res.code}")
+            json.decodeFromString(EpisodesResponse.serializer(), body).seasons
         }
     }
 
@@ -128,6 +138,9 @@ class HomeApi(private val baseUrl: String, private val token: String) {
 
 @Serializable
 private data class ShelvesResponse(val shelves: List<MusicShelf>)
+
+@Serializable
+private data class EpisodesResponse(val seasons: List<ShowSeason>)
 
 @Serializable
 private data class TracksResponse(val tracks: List<StoryTrack>)

@@ -1,9 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { showSeasons } from "../../lib/episodes";
 import { freshSheet, syncCatalog } from "../../lib/today";
 import { isYotoConfigured, refreshStories } from "../../lib/yoto";
 
 // Daily (vercel.json): re-read the sheet and re-resolve every title, so a show
-// that left a service disappears and one that came back reappears. Also safe
+// that left a service disappears and one that came back reappears, then refresh
+// every show's episodes so the first tap on one is quick. Also safe
 // to run by hand from Vercel's Cron Jobs page; the summary goes to the logs.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const secret = process.env.CRON_SECRET;
@@ -16,11 +18,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (isYotoConfigured()) {
     try { stories = await refreshStories(); } catch (e) { errors.push(`yoto: ${(e as Error).message}`); }
   }
+  let episodes = 0;
+  for (const row of rows.filter((r) => r.shelf === "shows" && r.service)) {
+    try { episodes += (await showSeasons(row, { force: true })).reduce((n, s) => n + s.episodes.length, 0); }
+    catch (e) { errors.push(`episodes ${row.source_key}: ${(e as Error).message}`); }
+  }
   const summary = {
     ok: errors.length === 0,
     services: sheet.services,
     titles: rows.map((r) => ({ title: r.title, shelf: r.shelf, service: r.service, link: r.link })),
     visible: rows.filter((r) => r.service).length,
+    episodes,
     stories,
     errors,
   };

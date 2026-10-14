@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         val app = application as BrimleyApplication
         setContent {
             BrimleyTheme {
-                BrimleyApp(repository = app.repository, tv = app.tv, podcasts = app.podcasts, feeds = app.feeds)
+                BrimleyApp(repository = app.repository, tv = app.tv, podcasts = app.podcasts, feeds = app.feeds, lastEpisodes = app.lastEpisodes)
             }
         }
     }

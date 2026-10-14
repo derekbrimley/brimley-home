@@ -204,6 +204,25 @@ class TvControllerTest {
         assertEquals(1, tv.oks())
     }
 
+    @Test fun maxEpisodePressesOnlyForTheProfile() = runTest {
+        val tv = FakeSession(on = true)
+        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
+        c.start(); runCurrent()
+        assertTrue(c.play(MAX_LINK, bluey, episode = true).isSuccess)
+        tv.status.value = tv.status.value.copy(appPackage = "com.wbd.stream"); runCurrent()
+        advanceTimeBy(60_000); runCurrent()
+        assertEquals(1, tv.oks())
+    }
+
+    @Test fun maxEpisodeAlreadyOpenPressesNothing() = runTest {
+        val tv = FakeSession(on = true).apply { status.value = status.value.copy(appPackage = "com.wbd.stream") }
+        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
+        c.start(); runCurrent()
+        c.play(MAX_LINK, bluey, episode = true)
+        advanceTimeBy(60_000); runCurrent()
+        assertEquals(0, tv.oks())
+    }
+
     @Test fun primePressesOkOnce() = runTest {
         val tv = FakeSession(on = true)
         val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)

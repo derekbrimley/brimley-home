@@ -264,6 +264,9 @@ RLS on, service role from the API, as in Crate.
 - Fridge (milestone 6): tapping the Note card opens the Fridge, with the last dozen
   notes (`GET /api/notes`) and Our makes from the sheet's Makes tab; a make's link
   opens in a WebView kept to its own site. `/api/today` carries only the newest note.
+- Episodes: tapping a show opens an episode picker (`GET /api/episodes`); each episode
+  links straight to itself, so the TV plays it instead of stopping on the show's page.
+  "Next up" follows the last episode started from the tablet.
 
 ## Build order
 

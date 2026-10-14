@@ -7,7 +7,9 @@ import home.brimley.data.HomeApi
 import home.brimley.data.SpotifyWaker
 import home.brimley.data.TodayRepository
 import home.brimley.tv.AtvConnector
+import home.brimley.tv.LastEpisodeStore
 import home.brimley.tv.NsdDiscovery
+import home.brimley.tv.PrefsLastEpisodes
 import home.brimley.tv.PrefsTvStore
 import home.brimley.tv.TvController
 import home.brimley.tv.TvIdentity
@@ -24,6 +26,8 @@ class BrimleyApplication : Application() {
         private set
     lateinit var podcasts: PodcastPlayer
         private set
+    lateinit var lastEpisodes: LastEpisodeStore
+        private set
     val feeds = PodcastFeeds()
     val spotify = SpotifyWaker(BuildConfig.SPOTIFY_CLIENT_ID)
 
@@ -31,6 +35,7 @@ class BrimleyApplication : Application() {
         super.onCreate()
         repository = TodayRepository(HomeApi(BuildConfig.API_BASE, BuildConfig.API_TOKEN), cacheDir, waker = spotify)
         podcasts = PodcastPlayer(this)
+        lastEpisodes = PrefsLastEpisodes(this)
         tv = TvController(PrefsTvStore(this), AtvConnector(TvIdentity(), scope), NsdDiscovery(this), scope).also { it.start() }
     }
 }
