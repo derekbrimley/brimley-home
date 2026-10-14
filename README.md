@@ -102,17 +102,18 @@ six-character code appears on the TV; tap it in. That's the only pairing; it
 repeats only if the TV is reset. Debug builds have a "TV test" button on the
 Watch tab that sends each title's link to the TV.
 
-Links open the app on the title's page, so for Max and Prime Video the tablet
-then presses OK for you: once for Max's "who's watching" (only when Max wasn't
-already open) and once for Play. The waits are in `tv/AutoPlay.kt`; lengthen
+Links open the app on the title's page, so for Max, Disney+ and Prime Video the
+tablet then presses OK for you: once for "who's watching" on Max and Disney+
+(only when the app wasn't already open) and once for Play. The waits are in `tv/AutoPlay.kt`; lengthen
 them if a press lands before the page has loaded.
 
-Shows open an episode picker instead: "Next up" (the episode after the last
-one started from the tablet), season tabs and a tile per episode. Each tile is
-a link straight to that episode, so the TV starts playing it rather than
-stopping on the show's page; on Max the tablet then only presses OK for the
-profile. A show whose service has no per-episode links (JustWatch gives every
-episode the same page) gets the old Play sheet.
+Shows open their own page instead: "Next up" (the episode after the last one
+started from the tablet), season tabs and a tile per episode. Each tile is a
+link straight to that episode, so the TV starts playing it rather than stopping
+on the show's page; the tablet then only presses OK for the profile. A show
+whose service has no per-episode links (JustWatch gives every episode the same
+page) gets one big Play for the show's link. In debug builds the TV test
+screen's "Episodes" button says how many episodes a show has, or why none.
 
 ### Music and podcasts on the tablet
 

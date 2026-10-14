@@ -60,6 +60,12 @@ export interface ShowSeason {
   episodes: ShowEpisode[];
 }
 
+// The /api/episodes body. `note` says why there are no seasons, for the TV test screen.
+export interface ShowEpisodes {
+  seasons: ShowSeason[];
+  note: string | null;
+}
+
 export interface Card {
   id: number;
   kind: string;           // lunch_menu | note | drawing | countdown | birthday

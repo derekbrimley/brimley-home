@@ -2,8 +2,8 @@ package home.brimley.tv
 
 import java.net.URI
 
-// A title link opens the app on the title's page, not playing it, and Max first
-// asks who's watching. These are the OK presses that get past that: once the app
+// A title link opens the app on the title's page, not playing it, and Max and
+// Disney+ first ask who's watching. These are the OK presses that get past that: once the app
 // is in front, wait each delay and press OK. "Cold" is when the app wasn't in
 // front before the link (so Max shows its profile picker); "warm" is when it was.
 // An episode link plays by itself, so it only needs the profile press; an extra
@@ -30,11 +30,17 @@ data class AutoPlay(
             coldDelaysMs = listOf(5_000, 4_000), warmDelaysMs = listOf(3_500),
             episodeColdDelaysMs = listOf(5_000), episodeWarmDelaysMs = emptyList(),
         )
+        private val DISNEY = AutoPlay(
+            "com.disney.disneyplus",
+            coldDelaysMs = listOf(5_000, 4_000), warmDelaysMs = listOf(3_500),
+            episodeColdDelaysMs = listOf(5_000), episodeWarmDelaysMs = emptyList(),
+        )
         private val PRIME = AutoPlay("com.amazon.amazonvideo.livingroom", coldDelaysMs = listOf(5_000), warmDelaysMs = listOf(3_000))
 
         private val byHost = listOf(
             "max.com" to MAX,
             "hbomax.com" to MAX,
+            "disneyplus.com" to DISNEY,
             "primevideo.com" to PRIME,
             "amazon.com" to PRIME,
         )

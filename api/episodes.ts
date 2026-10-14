@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { authenticate } from "../lib/auth";
-import { showSeasons } from "../lib/episodes";
+import { showEpisodes } from "../lib/episodes";
 import { getCatalogRows } from "../lib/queries";
 
 // GET /api/episodes?id=<catalog id> — a show's seasons, each episode with its own
@@ -15,9 +15,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const row = (await getCatalogRows()).find((r) => r.source_key === id);
   if (!row || row.shelf !== "shows" || !row.service) return res.status(404).json({ error: "That show isn't on the shelf" });
   try {
-    return res.status(200).json({ seasons: await showSeasons(row) });
+    return res.status(200).json(await showEpisodes(row));
   } catch (e) {
-    console.error(`episodes ${id}: ${(e as Error).message}`);
-    return res.status(502).json({ error: "Couldn't find the episodes" });
+    const why = (e as Error).message;
+    console.error(`episodes ${id}: ${why}`);
+    return res.status(502).json({ error: `Couldn't find the episodes (${why})` });
   }
 }
