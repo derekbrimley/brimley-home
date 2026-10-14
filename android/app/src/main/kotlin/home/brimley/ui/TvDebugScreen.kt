@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import home.brimley.data.TodayRepository
 import home.brimley.model.CatalogItem
+import home.brimley.tv.LinkVariants
 import home.brimley.tv.StartedTitle
 import home.brimley.tv.TvController
 import home.brimley.ui.theme.Ink
@@ -35,6 +36,8 @@ import kotlinx.coroutines.launch
 // Debug builds only: send each catalog link to the TV to check it opens the
 // right title on that service. For shows, "Episodes" asks /api/episodes and
 // says how many it found (or why none), with the first episode's link to send.
+// HBO Max titles also get other shapes of their link, sent with no OK presses,
+// to find the one that opens the title rather than the app's home page.
 @Composable
 fun TvDebugScreen(catalog: List<CatalogItem>, tv: TvController, repository: TodayRepository, onHome: () -> Unit, onPair: () -> Unit) {
     val state by tv.state.collectAsState()
@@ -90,6 +93,20 @@ fun TvDebugScreen(catalog: List<CatalogItem>, tv: TvController, repository: Toda
                                 .fold({ "Sent" }, { it.message ?: "Failed" })
                         }
                     })
+                }
+                val variants = LinkVariants.forLink(item.link!!)
+                if (variants.isNotEmpty()) {
+                    Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        variants.forEach { (label, link) ->
+                            InkButton(label, filled = false, onClick = {
+                                results[item.id] = "Opening $link (no OK presses)…"
+                                scope.launch {
+                                    results[item.id] = tv.play(link, StartedTitle(item.title, item.serviceLabel, item.posterUrl), pressOk = false)
+                                        .fold({ "Opened $label: $link" }, { it.message ?: "Failed" })
+                                }
+                            })
+                        }
+                    }
                 }
                 HorizontalDivider(thickness = 3.dp, color = Ink)
             }
