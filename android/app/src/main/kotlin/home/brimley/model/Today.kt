@@ -50,6 +50,13 @@ data class CatalogItem(
     val year: Int? = null,
 )
 
+// A show's episodes, from GET /api/episodes?id=<catalog id>. Each has its own link.
+@Serializable
+data class ShowEpisode(val number: Int, val title: String, val link: String, val stillUrl: String? = null)
+
+@Serializable
+data class ShowSeason(val number: Int, val episodes: List<ShowEpisode>)
+
 @Serializable
 data class Card(
     val id: Int,

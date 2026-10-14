@@ -64,7 +64,7 @@ export function pickOffer(offers: JWOffer[], service: string): string | null {
   return best?.standardWebURL ?? best?.deeplinkURL ?? null;
 }
 
-interface TmdbResult { id: number; media_type: "movie" | "tv" | "person"; title?: string; name?: string; poster_path?: string | null; release_date?: string; first_air_date?: string; popularity?: number }
+export interface TmdbResult { id: number; media_type: "movie" | "tv" | "person"; title?: string; name?: string; poster_path?: string | null; release_date?: string; first_air_date?: string; popularity?: number }
 
 export function bestTmdbResult(results: TmdbResult[], shelf: Shelf | null, query: string): TmdbResult | null {
   const wanted = shelf === "movies" ? "movie" : shelf === "shows" ? "tv" : null;
@@ -74,7 +74,7 @@ export function bestTmdbResult(results: TmdbResult[], shelf: Shelf | null, query
   return exact ?? candidates[0] ?? null;
 }
 
-async function tmdb<T>(path: string, params: Record<string, string> = {}): Promise<T> {
+export async function tmdb<T>(path: string, params: Record<string, string> = {}): Promise<T> {
   const key = process.env.TMDB_API_KEY;
   if (!key) throw new Error("TMDB_API_KEY is not set");
   const qs = new URLSearchParams({ api_key: key, ...params });
@@ -83,34 +83,53 @@ async function tmdb<T>(path: string, params: Record<string, string> = {}): Promi
   return (await res.json()) as T;
 }
 
-async function justwatchLink(title: string, year: number | null, service: string, country: string): Promise<string | null> {
+export const JUSTWATCH_URL = "https://apis.justwatch.com/graphql";
+
+// One JustWatch GraphQL call; null on any failure (the endpoint is undocumented).
+export async function justwatch<T>(query: string, variables: Record<string, unknown>): Promise<T | null> {
+  try {
+    const res = await fetch(JUSTWATCH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": "brimley-home/0.1" },
+      body: JSON.stringify({ query, variables }),
+    });
+    if (!res.ok) return null;
+    const j = (await res.json()) as { data?: T };
+    return j.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export interface JWTitle { id: string; offers: JWOffer[] }
+
+// The JustWatch title for a sheet row: an exact title in the right year, then
+// an exact title, then whatever JustWatch ranks first.
+export async function justwatchTitle(title: string, year: number | null, country: string): Promise<JWTitle | null> {
   const query = `query Search($filter: TitleFilter!, $country: Country!, $language: Language!, $first: Int!) {
     popularTitles(country: $country, filter: $filter, first: $first) {
       edges { node { ... on MovieOrShow {
+        id
         objectType
         content(country: $country, language: $language) { title originalReleaseYear }
         offers(country: $country, platform: WEB) { monetizationType standardWebURL package { technicalName clearName } }
       } } }
     } }`;
-  try {
-    const res = await fetch("https://apis.justwatch.com/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "User-Agent": "brimley-home/0.1" },
-      body: JSON.stringify({ query, variables: { filter: { searchQuery: title }, country, language: "en", first: 5 } }),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { data?: { popularTitles?: { edges: { node: { content: { title: string; originalReleaseYear: number | null }; offers: JWOffer[] } }[] } } };
-    const edges = data.data?.popularTitles?.edges ?? [];
-    const q = slug(title);
-    const node =
-      edges.find((e) => slug(e.node.content.title) === q && (!year || e.node.content.originalReleaseYear === year))?.node ??
-      edges.find((e) => slug(e.node.content.title) === q)?.node ??
-      edges[0]?.node;
-    if (!node) return null;
-    return pickOffer(node.offers ?? [], service);
-  } catch {
-    return null;
-  }
+  const data = await justwatch<{ popularTitles?: { edges: { node: { id: string; content: { title: string; originalReleaseYear: number | null }; offers: JWOffer[] } }[] } }>(
+    query, { filter: { searchQuery: title }, country, language: "en", first: 5 },
+  );
+  const edges = data?.popularTitles?.edges ?? [];
+  const q = slug(title);
+  const node =
+    edges.find((e) => slug(e.node.content.title) === q && (!year || e.node.content.originalReleaseYear === year))?.node ??
+    edges.find((e) => slug(e.node.content.title) === q)?.node ??
+    edges[0]?.node;
+  return node ? { id: node.id, offers: node.offers ?? [] } : null;
+}
+
+async function justwatchLink(title: string, year: number | null, service: string, country: string): Promise<string | null> {
+  const node = await justwatchTitle(title, year, country);
+  return node ? pickOffer(node.offers, service) : null;
 }
 
 export async function resolveWatch(row: WatchRow, paidServices: string[]): Promise<ResolvedWatch> {

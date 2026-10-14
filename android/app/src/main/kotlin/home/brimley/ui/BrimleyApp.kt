@@ -16,6 +16,7 @@ import home.brimley.BuildConfig
 import home.brimley.data.TodayRepository
 import home.brimley.audio.PodcastFeeds
 import home.brimley.audio.PodcastPlayer
+import home.brimley.tv.LastEpisodeStore
 import home.brimley.tv.TvController
 import home.brimley.tv.TvState
 import kotlinx.coroutines.launch
@@ -33,7 +34,7 @@ sealed interface Screen {
 }
 
 @Composable
-fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastPlayer, feeds: PodcastFeeds) {
+fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastPlayer, feeds: PodcastFeeds, lastEpisodes: LastEpisodeStore) {
     val state by repository.state.collectAsState()
     var screen by remember { mutableStateOf<Screen>(Screen.Home) }
     val tvState by tv.state.collectAsState()
@@ -86,6 +87,7 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
                 tv = tv,
                 podcasts = podcasts,
                 feeds = feeds,
+                lastEpisodes = lastEpisodes,
                 onSetUpTv = { screen = Screen.TvPair },
                 onTvDebug = { screen = Screen.TvDebug },
                 initialTab = s.tab,

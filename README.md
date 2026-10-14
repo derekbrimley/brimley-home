@@ -47,7 +47,8 @@ Routes (all take `Authorization: Bearer <token>` from `HOME_API_TOKENS`):
 | `GET /api/yoto/tracks?cardId=` | Signed track URLs, to play a card on the tablet |
 | `POST /api/yoto/play` | `{ cardId }` start a card on the Yoto player |
 | `POST /api/yoto/control` | `{ action }` pause, resume, stop |
-| `GET /api/cron/sync` | Daily: re-read the sheet, re-resolve every title, re-read the Yoto library |
+| `GET /api/episodes?id=` | A show's seasons and episodes, each with its own link on the show's service |
+| `GET /api/cron/sync` | Daily: re-read the sheet, re-resolve every title, refresh every show's episodes, re-read the Yoto library |
 
 The lunch menu on Zo: the automation that reads the district's menu writes `lunch.json`,
 and a background script posts it on Monday morning. The card shows only on that Monday
@@ -105,6 +106,13 @@ Links open the app on the title's page, so for Max and Prime Video the tablet
 then presses OK for you: once for Max's "who's watching" (only when Max wasn't
 already open) and once for Play. The waits are in `tv/AutoPlay.kt`; lengthen
 them if a press lands before the page has loaded.
+
+Shows open an episode picker instead: "Next up" (the episode after the last
+one started from the tablet), season tabs and a tile per episode. Each tile is
+a link straight to that episode, so the TV starts playing it rather than
+stopping on the show's page; on Max the tablet then only presses OK for the
+profile. A show whose service has no per-episode links (JustWatch gives every
+episode the same page) gets the old Play sheet.
 
 ### Music and podcasts on the tablet
 

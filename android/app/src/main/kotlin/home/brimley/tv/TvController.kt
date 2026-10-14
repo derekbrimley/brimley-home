@@ -104,7 +104,8 @@ class TvController(
         return withTimeoutOrNull(RECONNECT_MS) { session.filterNotNull().first() }
     }
 
-    suspend fun play(link: String, title: StartedTitle): Result<Unit> {
+    // `episode` is a link straight to an episode, which starts playing by itself.
+    suspend fun play(link: String, title: StartedTitle, episode: Boolean = false): Result<Unit> {
         if (store.serverCertSha256 == null) return Result.failure(TvNotPaired())
         val s = liveSession() ?: return Result.failure(IOException("Couldn't reach the TV"))
         return runCatching {
@@ -122,7 +123,8 @@ class TvController(
             started = title
             s.send(RemoteMessages.appLink(link))
             publish(s.status.value)
-            if (plan != null) autoPlay = scope.launch { pressThrough(s, plan.appPackage, if (warm) plan.warmDelaysMs else plan.coldDelaysMs) }
+            val presses = plan?.delays(warm, episode).orEmpty()
+            if (plan != null && presses.isNotEmpty()) autoPlay = scope.launch { pressThrough(s, plan.appPackage, presses) }
         }
     }
 
