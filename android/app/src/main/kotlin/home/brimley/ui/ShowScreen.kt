@@ -82,13 +82,13 @@ fun ShowScreen(
         episodes = repository.episodes(item.id).getOrElse { ShowEpisodes(note = it.message ?: "Couldn't find the episodes") }
     }
 
-    fun start(link: String, started: StartedTitle, episode: Boolean, ref: EpisodeRef?) {
+    fun start(link: String, started: StartedTitle, ref: EpisodeRef?) {
         if (busy) return
         if (tv.state.value == TvState.NotPaired) { onSetUpTv(); return }
         busy = true
         status = "Starting on the TV…"
         scope.launch {
-            tv.play(link, started, episode)
+            tv.play(link, started)
                 .onSuccess {
                     ref?.let { lastEpisodes.set(item.id, it); last = it }
                     onStarted()
@@ -97,9 +97,9 @@ fun ShowScreen(
             busy = false
         }
     }
-    val playShow = { start(item.link!!, StartedTitle(item.title, item.serviceLabel, item.posterUrl), episode = false, ref = null) }
+    val playShow = { start(item.link!!, StartedTitle(item.title, item.serviceLabel, item.posterUrl), ref = null) }
     val playEpisode = { s: ShowSeason, e: ShowEpisode ->
-        start(e.link, StartedTitle("${item.title} · S${s.number} E${e.number}", item.serviceLabel, e.stillUrl ?: item.posterUrl), episode = true, ref = EpisodeRef(s.number, e.number))
+        start(e.link, StartedTitle("${item.title} · S${s.number} E${e.number}", item.serviceLabel, e.stillUrl ?: item.posterUrl), ref = EpisodeRef(s.number, e.number))
     }
 
     Column(Modifier.fillMaxSize().background(Paper)) {
@@ -140,7 +140,7 @@ fun ShowScreen(
                     e == null -> Text("Finding the episodes…", style = MaterialTheme.typography.titleLarge, color = Ink)
                     e.seasons.isEmpty() -> {
                         Text("Tap Play to start ${item.title} on the TV.", style = MaterialTheme.typography.titleLarge, color = Ink)
-                        Text("${item.serviceLabel} doesn't let us pick the episode, so it carries on where you left off.", style = MaterialTheme.typography.bodyMedium, color = Ink, modifier = Modifier.padding(top = 8.dp))
+                        Text("${item.serviceLabel} doesn't let us pick the episode, so it carries on where you left off. Press OK on the Playing card to start it.", style = MaterialTheme.typography.bodyMedium, color = Ink, modifier = Modifier.padding(top = 8.dp))
                         if (BuildConfig.DEBUG) e.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Ink, modifier = Modifier.padding(top = 18.dp)) }
                     }
                     else -> EpisodePicker(e.seasons, last, onPlay = playEpisode)

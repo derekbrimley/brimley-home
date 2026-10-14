@@ -5,7 +5,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -31,7 +30,6 @@ class TvController(
     private val kick = Channel<Unit>(Channel.CONFLATED)   // skip the backoff wait
     private var started: StartedTitle? = null
     private var loop: Job? = null
-    private var autoPlay: Job? = null
     private var pairingHost: String? = null
 
     fun start() {
@@ -104,9 +102,9 @@ class TvController(
         return withTimeoutOrNull(RECONNECT_MS) { session.filterNotNull().first() }
     }
 
-    // `episode` is a link straight to an episode, which starts playing by itself.
-    // `pressOk = false` (TV test screen) only opens the link, to see where it lands.
-    suspend fun play(link: String, title: StartedTitle, episode: Boolean = false, pressOk: Boolean = true): Result<Unit> {
+    // Opens the link and stops there. Most apps land on the title's page (or ask
+    // who's watching first); the OK button on the Playing card takes it from there.
+    suspend fun play(link: String, title: StartedTitle): Result<Unit> {
         if (store.serverCertSha256 == null) return Result.failure(TvNotPaired())
         val s = liveSession() ?: return Result.failure(IOException("Couldn't reach the TV"))
         return runCatching {
@@ -118,30 +116,16 @@ class TvController(
                 withTimeoutOrNull(POWER_ON_MS) { s.status.first { it.poweredOn == true } }
                     ?: throw IOException("The TV didn't turn on")
             }
-            val plan = AutoPlay.forLink(link)?.takeIf { pressOk }
-            val warm = plan != null && s.status.value.appPackage == plan.appPackage
-            autoPlay?.cancel()
             started = title
             s.send(RemoteMessages.appLink(link))
             publish(s.status.value)
-            val presses = plan?.delays(warm, episode).orEmpty()
-            if (plan != null && presses.isNotEmpty()) autoPlay = scope.launch { pressThrough(s, plan.appPackage, presses) }
-        }
-    }
-
-    // Press OK past the profile picker and onto Play. Stops if the app never
-    // opens, something else comes to the front, or the TV turns off.
-    private suspend fun pressThrough(s: TvSession, appPackage: String, delaysMs: List<Long>) {
-        withTimeoutOrNull(APP_OPEN_MS) { s.status.first { it.appPackage == appPackage } } ?: return
-        for (d in delaysMs) {
-            delay(d)
-            val st = s.status.value
-            if (st.poweredOn == false || st.appPackage != appPackage) return
-            try { s.send(RemoteMessages.key(KeyCode.DPAD_CENTER)) } catch (_: IOException) { return }
         }
     }
 
     // Buttons on the Playing card: a dropped connection just means nothing happens.
+    // OK is the remote's centre button, and the only one: no arrows or Back, so
+    // it can press whatever the app has picked (Play, a profile) but never wander.
+    suspend fun ok() = key(KeyCode.DPAD_CENTER)
     suspend fun playPause() = key(KeyCode.MEDIA_PLAY_PAUSE)
     suspend fun volumeUp() = key(KeyCode.VOLUME_UP)
     suspend fun volumeDown() = key(KeyCode.VOLUME_DOWN)
@@ -151,9 +135,7 @@ class TvController(
         if (session.value?.status?.value?.poweredOn == true) key(KeyCode.POWER)
     }
 
-    // Any button on the tablet means someone is driving; stop pressing OK for them.
     private suspend fun key(code: Int) {
-        autoPlay?.cancel()
         val s = session.value ?: return
         try { s.send(RemoteMessages.key(code)) } catch (_: IOException) { s.close() }
     }
@@ -182,6 +164,5 @@ class TvController(
         const val RECONNECT_MS = 16_000L   // a dead cached address (5 s) + discovery (6 s) + connect
         const val POWER_STATE_MS = 3_000L
         const val POWER_ON_MS = 8_000L
-        const val APP_OPEN_MS = 15_000L
     }
 }

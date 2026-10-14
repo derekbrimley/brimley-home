@@ -179,90 +179,21 @@ class TvControllerTest {
 
     private fun FakeSession.oks() = sent.count { it.contentEquals(RemoteMessages.key(KeyCode.DPAD_CENTER)) }
 
-    @Test fun maxFromColdPressesOkForTheProfileThenForPlay() = runTest {
+    @Test fun playOpensTheLinkAndPressesNothing() = runTest {
         val tv = FakeSession(on = true)
         val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
         c.start(); runCurrent()
         assertTrue(c.play(MAX_LINK, bluey).isSuccess)
-        advanceTimeBy(2_000); runCurrent()
-        assertEquals(0, tv.oks())   // nothing until the app is in front
         tv.status.value = tv.status.value.copy(appPackage = "com.wbd.stream"); runCurrent()
-        advanceTimeBy(5_001); runCurrent()
-        assertEquals(1, tv.oks())
-        advanceTimeBy(4_001); runCurrent()
-        assertEquals(2, tv.oks())
-        advanceTimeBy(30_000); runCurrent()
-        assertEquals(2, tv.oks())
-    }
-
-    @Test fun maxAlreadyOpenSkipsTheProfilePress() = runTest {
-        val tv = FakeSession(on = true).apply { status.value = status.value.copy(appPackage = "com.wbd.stream") }
-        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
-        c.start(); runCurrent()
-        c.play(MAX_LINK, bluey)
-        advanceTimeBy(60_000); runCurrent()
-        assertEquals(1, tv.oks())
-    }
-
-    @Test fun maxEpisodePressesOnlyForTheProfile() = runTest {
-        val tv = FakeSession(on = true)
-        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
-        c.start(); runCurrent()
-        assertTrue(c.play(MAX_LINK, bluey, episode = true).isSuccess)
-        tv.status.value = tv.status.value.copy(appPackage = "com.wbd.stream"); runCurrent()
-        advanceTimeBy(60_000); runCurrent()
-        assertEquals(1, tv.oks())
-    }
-
-    @Test fun maxEpisodeAlreadyOpenPressesNothing() = runTest {
-        val tv = FakeSession(on = true).apply { status.value = status.value.copy(appPackage = "com.wbd.stream") }
-        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
-        c.start(); runCurrent()
-        c.play(MAX_LINK, bluey, episode = true)
         advanceTimeBy(60_000); runCurrent()
         assertEquals(0, tv.oks())
     }
 
-    @Test fun primePressesOkOnce() = runTest {
+    @Test fun okSendsTheCentreButton() = runTest {
         val tv = FakeSession(on = true)
         val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
         c.start(); runCurrent()
-        c.play("https://www.amazon.com/gp/video/detail/B0ABC", bluey)
-        tv.status.value = tv.status.value.copy(appPackage = "com.amazon.amazonvideo.livingroom"); runCurrent()
-        advanceTimeBy(60_000); runCurrent()
+        c.ok()
         assertEquals(1, tv.oks())
-    }
-
-    @Test fun okPressesStopWhenAnotherAppComesToTheFront() = runTest {
-        val tv = FakeSession(on = true)
-        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
-        c.start(); runCurrent()
-        c.play(MAX_LINK, bluey)
-        tv.status.value = tv.status.value.copy(appPackage = "com.wbd.stream"); runCurrent()
-        advanceTimeBy(5_001); runCurrent()
-        tv.status.value = tv.status.value.copy(appPackage = "com.google.android.apps.tv.launcherx"); runCurrent()
-        advanceTimeBy(60_000); runCurrent()
-        assertEquals(1, tv.oks())
-    }
-
-    @Test fun aTabletButtonStopsTheOkPresses() = runTest {
-        val tv = FakeSession(on = true)
-        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
-        c.start(); runCurrent()
-        c.play(MAX_LINK, bluey)
-        tv.status.value = tv.status.value.copy(appPackage = "com.wbd.stream"); runCurrent()
-        c.playPause()
-        advanceTimeBy(60_000); runCurrent()
-        assertEquals(0, tv.oks())
-    }
-
-    @Test fun appsThatPlayOnTheirOwnGetNoPresses() = runTest {
-        val tv = FakeSession(on = true)
-        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)
-        c.start(); runCurrent()
-        c.play("https://www.youtube.com/watch?v=abc", bluey)
-        tv.status.value = tv.status.value.copy(appPackage = "com.google.android.youtube.tv"); runCurrent()
-        advanceTimeBy(60_000); runCurrent()
-        assertEquals(0, tv.oks())
     }
 }

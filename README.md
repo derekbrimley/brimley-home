@@ -102,15 +102,15 @@ six-character code appears on the TV; tap it in. That's the only pairing; it
 repeats only if the TV is reset. Debug builds have a "TV test" button on the
 Watch tab that sends each title's link to the TV.
 
-Links open the app on the title's page, so for Max, Disney+ and Prime Video the
-tablet then presses OK for you: once for "who's watching" on Max and Disney+
-(only when the app wasn't already open) and once for Play. The waits are in `tv/AutoPlay.kt`; lengthen
-them if a press lands before the page has loaded.
+Links open the app on the title's page (or its "who's watching" first). The
+Playing card's TV entry has a big OK, the remote's centre button, to press Play
+from there. There are no arrows or Back, so OK can only press what the app has
+already picked. The tablet never presses anything on its own.
 
 Shows open their own page instead: "Next up" (the episode after the last one
 started from the tablet), season tabs and a tile per episode. Each tile is a
 link straight to that episode, so the TV starts playing it rather than stopping
-on the show's page; the tablet then only presses OK for the profile. A show
+on the show's page (after OK, if the app asks who's watching). A show
 whose service has no per-episode links (JustWatch gives every episode the same
 page) gets one big Play for the show's link. In debug builds the TV test
 screen's "Episodes" button says how many episodes a show has, or why none.
