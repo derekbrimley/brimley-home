@@ -43,4 +43,14 @@ describe("buildJobsBlocks", () => {
     expect(block.bounty?.title).toBe("Rake");
     expect(block.bounty?.status).toBe("waiting");
   });
+  it("gives each kid her own block and shares an unassigned bounty", () => {
+    const both: JobRow[] = [...rows, { row: 5, kid: "Holland", title: "Make bed", days: [1, 2, 3, 4, 5, 6, 7] }];
+    const done = new Set([`2026-10-14|${jobId("Holland", "Make bed")}`]);
+    const blocks = buildJobsBlocks(both, bounties, done, "2026-10-14", tz, now);
+    expect(blocks.map((b) => b.kid)).toEqual(["Sylvie", "Holland"]);
+    expect(blocks[0].allDone).toBe(false);
+    expect(blocks[1].jobs.map((j) => j.id)).toEqual(["holland|make-bed"]);
+    expect(blocks[1].allDone).toBe(true);
+    expect(blocks.map((b) => b.bounty?.row)).toEqual([2, 2]);
+  });
 });

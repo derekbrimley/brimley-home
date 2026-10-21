@@ -26,7 +26,8 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private const val MAX_LINES = 5
+// The card is a third of the left column: three rows, or two and "and N more".
+private const val MAX_LINES = 3
 
 @Composable
 fun TodayCard(events: List<TodayEvent>, modifier: Modifier = Modifier) {
