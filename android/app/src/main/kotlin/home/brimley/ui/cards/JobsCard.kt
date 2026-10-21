@@ -1,26 +1,29 @@
 package home.brimley.ui.cards
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,51 +48,70 @@ fun JobsCard(
     onClaimBounty: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // One kid per card for now; a second child gets a second card later.
-    val block = blocks.firstOrNull()
-    val inverted = block?.allDone == true
-    InkCard(modifier, inverted = inverted) {
-        if (block == null) {
+    // One section per kid, stacked. Extra jobs aren't assigned to anyone, so the
+    // server repeats the same bounty in every block; show it once, at the bottom.
+    val bounty = blocks.firstNotNullOfOrNull { it.bounty }
+    InkCard(modifier) {
+        if (blocks.isEmpty()) {
             CardTitle("Jobs")
             Text("No jobs today.", style = MaterialTheme.typography.bodyLarge, color = Ink)
             return@InkCard
         }
-        Box(Modifier.fillMaxSize()) {
-            Column {
-                CardTitle("${block.kid}'s jobs", inverted = inverted, trailing = "${block.doneCount} of ${block.jobs.size}")
-                Spacer(Modifier.height(8.dp))
-                if (inverted) {
-                    AllDoneStamp(Modifier.padding(top = 12.dp, start = 4.dp))
-                } else {
-                    block.jobs.forEach { job ->
-                        Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                            InkCheckbox(checked = job.done, onClick = { onToggle(job) })
-                            Spacer(Modifier.width(14.dp))
-                            Text(job.title, style = MaterialTheme.typography.bodyLarge, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
-                }
-                Spacer(Modifier.height(6.dp))
-                StarsRow(block.starsThisWeek, inverted)
-                block.bounty?.let { Spacer(Modifier.height(8.dp)); BountyRow(it, inverted, onClaimBounty) }
+        blocks.forEachIndexed { i, block ->
+            if (i > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp), thickness = Rules.thin, color = Ink)
+            KidSection(block, onToggle)
+        }
+        bounty?.let { Spacer(Modifier.height(10.dp)); BountyRow(it, inverted = false, onClaimBounty) }
+    }
+}
+
+@Composable
+private fun KidSection(block: JobsBlock, onToggle: (TodayJob) -> Unit) {
+    val inverted = block.allDone
+    val ink = if (inverted) Paper else Ink
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(if (inverted) Ink else Paper)
+            .padding(horizontal = if (inverted) 12.dp else 0.dp, vertical = if (inverted) 6.dp else 0.dp),
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(block.kid, style = MaterialTheme.typography.titleLarge, color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            if (block.jobs.isNotEmpty()) {
+                Spacer(Modifier.width(10.dp))
+                Text("${block.doneCount} of ${block.jobs.size}", style = MaterialTheme.typography.labelMedium, color = ink, maxLines = 1)
             }
-            CatIllustration(
-                Modifier.align(Alignment.TopEnd).size(76.dp),
-                ink = if (inverted) Paper else Ink,
-                paper = if (inverted) Ink else Paper,
-                happy = inverted,
-            )
+            Spacer(Modifier.weight(1f))
+            StarsRow(block.starsThisWeek, ink)
+        }
+        when {
+            block.jobs.isEmpty() ->
+                Text("No jobs today.", style = MaterialTheme.typography.bodyLarge, color = ink, modifier = Modifier.padding(vertical = 4.dp))
+            inverted -> Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                AllDoneStamp(Modifier.padding(start = 4.dp))
+                Spacer(Modifier.weight(1f))
+                CatIllustration(Modifier.size(64.dp), ink = Paper, paper = Ink, happy = true)
+            }
+            else -> block.jobs.forEach { job ->
+                // The whole row is the tap target, not just the box.
+                Row(
+                    Modifier.fillMaxWidth().height(48.dp).clickable { onToggle(job) },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    InkCheckbox(checked = job.done, onClick = { onToggle(job) })
+                    Spacer(Modifier.width(14.dp))
+                    Text(job.title, style = MaterialTheme.typography.bodyLarge, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun StarsRow(stars: Int, inverted: Boolean) {
-    val ink = if (inverted) Paper else Ink
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-        repeat(5) { i -> Star(Modifier.size(24.dp), filled = i < stars, ink = ink) }
-        Spacer(Modifier.width(6.dp))
-        Text("this week", style = MaterialTheme.typography.labelMedium, color = ink)
+private fun StarsRow(stars: Int, ink: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        repeat(5) { i -> Star(Modifier.size(22.dp), filled = i < stars, ink = ink) }
     }
 }
 
@@ -104,9 +126,12 @@ private fun BountyRow(b: TodayBounty, inverted: Boolean, onClaim: (Int) -> Unit)
             .padding(start = 14.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The money is what a kid looks for, so it leads, big.
+        Text(dollars, style = MaterialTheme.typography.headlineMedium, color = ink, maxLines = 1)
+        Spacer(Modifier.width(12.dp))
         Text(
-            buildString { append("Extra job: "); append(b.title); append(" · "); append(dollars) },
-            style = MaterialTheme.typography.bodySmall, color = ink, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            b.title.replaceFirstChar { it.uppercase() },
+            style = MaterialTheme.typography.bodyMedium, color = ink, maxLines = 2, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(8.dp))

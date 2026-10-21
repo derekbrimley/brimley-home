@@ -32,7 +32,7 @@ cd android && ./gradlew assembleDebug   # needs the Android SDK
 - Illustrations are solid black silhouettes with white cut-outs, drawn in
   `ui/Illustrations.kt`. New features get a drawing, not just a label.
 - Nothing on the tablet asks for typing. Parents edit the Google Sheet or post cards.
-- The home screen is three columns: Today and Jobs stacked on the left, Music (one
+- The home screen is three columns: Today and Jobs (a section per kid) stacked on the left, Music (one
   crate's covers, scrolling, with what's playing in the kitchen on top) filling the
   middle, Watch and Yoto stacked on the right; a black band on top, a day-card footer.
   Watch and Yoto open their pickers and come back home to the controls. The note card

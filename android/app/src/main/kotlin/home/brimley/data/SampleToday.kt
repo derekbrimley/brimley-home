@@ -73,7 +73,17 @@ object SampleToday {
                 ),
                 doneCount = 2, allDone = false, starsThisWeek = 2,
                 bounty = TodayBounty(row = 2, title = "vacuum the basement", amountCents = 100, status = "open"),
-            )
+            ),
+            JobsBlock(
+                kid = "Holland",
+                jobs = listOf(
+                    TodayJob("holland|make-bed", "Holland", "Make bed", true),
+                    TodayJob("holland|set-the-table", "Holland", "Set the table", true),
+                    TodayJob("holland|put-shoes-away", "Holland", "Put shoes away", true),
+                ),
+                doneCount = 3, allDone = true, starsThisWeek = 3,
+                bounty = TodayBounty(row = 2, title = "vacuum the basement", amountCents = 100, status = "open"),
+            ),
         ),
         cards = listOf(
             Card(
