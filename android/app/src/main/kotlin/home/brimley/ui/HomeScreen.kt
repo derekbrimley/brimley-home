@@ -69,14 +69,14 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Jobs holds two kids' lists, so it gets two thirds; Today fits three events.
+                // Jobs holds two kids' lists and gets most of the column; Today fits three events.
                 TodayCard(today.events, Modifier.weight(1f).fillMaxWidth())
                 JobsCard(
                     blocks = today.jobs,
                     celebrateKid = celebrateKid,
                     onToggle = onToggleJob,
                     onClaimBounty = onClaimBounty,
-                    modifier = Modifier.weight(2f).fillMaxWidth(),
+                    modifier = Modifier.weight(2.5f).fillMaxWidth(),
                 )
             }
             // The note card (NoteCard) and the fridge are off the home screen for now.

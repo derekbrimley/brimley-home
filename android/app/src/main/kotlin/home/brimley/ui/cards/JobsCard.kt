@@ -58,10 +58,15 @@ fun JobsCard(
             return@InkCard
         }
         blocks.forEachIndexed { i, block ->
-            if (i > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp), thickness = Rules.thin, color = Ink)
+            if (i > 0) HorizontalDivider(Modifier.padding(vertical = 14.dp), thickness = Rules.thin, color = Ink)
             KidSection(block, onToggle)
         }
-        bounty?.let { Spacer(Modifier.height(10.dp)); BountyRow(it, inverted = false, onClaimBounty) }
+        // The extra job sits on the bottom edge, apart from the daily lists.
+        bounty?.let {
+            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(12.dp))
+            BountyRow(it, inverted = false, onClaimBounty)
+        }
     }
 }
 
@@ -77,7 +82,7 @@ private fun KidSection(block: JobsBlock, onToggle: (TodayJob) -> Unit) {
             .padding(horizontal = if (inverted) 12.dp else 0.dp, vertical = if (inverted) 6.dp else 0.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(block.kid, style = MaterialTheme.typography.titleLarge, color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            Text(block.kid, style = MaterialTheme.typography.titleLarge, color = ink, maxLines = 1)
             if (block.jobs.isNotEmpty()) {
                 Spacer(Modifier.width(10.dp))
                 Text("${block.doneCount} of ${block.jobs.size}", style = MaterialTheme.typography.labelMedium, color = ink, maxLines = 1)
@@ -85,6 +90,7 @@ private fun KidSection(block: JobsBlock, onToggle: (TodayJob) -> Unit) {
             Spacer(Modifier.weight(1f))
             StarsRow(block.starsThisWeek, ink)
         }
+        Spacer(Modifier.height(4.dp))
         when {
             block.jobs.isEmpty() ->
                 Text("No jobs today.", style = MaterialTheme.typography.bodyLarge, color = ink, modifier = Modifier.padding(vertical = 4.dp))
