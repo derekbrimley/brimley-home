@@ -126,9 +126,12 @@ private fun BountyRow(b: TodayBounty, inverted: Boolean, onClaim: (Int) -> Unit)
             .padding(start = 14.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The money is what a kid looks for, so it leads, big.
+        Text(dollars, style = MaterialTheme.typography.headlineMedium, color = ink, maxLines = 1)
+        Spacer(Modifier.width(12.dp))
         Text(
-            buildString { append("Extra job: "); append(b.title); append(" · "); append(dollars) },
-            style = MaterialTheme.typography.bodySmall, color = ink, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            b.title.replaceFirstChar { it.uppercase() },
+            style = MaterialTheme.typography.bodyMedium, color = ink, maxLines = 2, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(8.dp))
