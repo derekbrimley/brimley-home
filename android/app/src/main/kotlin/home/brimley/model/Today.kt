@@ -96,6 +96,14 @@ data class Weather(
     val icon: String,
 )
 
+// Home movies from the personal site: a shelf per kid, then "More videos".
+// videoUrl is a plain MP4 (behind a redirect), cast to the TV rather than opened.
+@Serializable
+data class HomeMovie(val id: String, val title: String, val videoUrl: String, val posterUrl: String? = null)
+
+@Serializable
+data class HomeMovieShelf(val name: String, val movies: List<HomeMovie> = emptyList())
+
 @Serializable
 data class Make(val title: String, val who: String? = null, val link: String? = null, val imageUrl: String? = null)
 
@@ -125,6 +133,7 @@ data class Today(
     val cards: List<Card> = emptyList(),       // at most one note or drawing: the newest
     val playing: List<Playing> = emptyList(),
     val catalog: List<CatalogItem> = emptyList(),
+    val homeMovies: List<HomeMovieShelf> = emptyList(),
     val makes: List<Make> = emptyList(),
     val warnings: List<String> = emptyList(),
 )

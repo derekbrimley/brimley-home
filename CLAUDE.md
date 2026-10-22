@@ -43,11 +43,14 @@ cd android && ./gradlew assembleDebug   # needs the Android SDK
 
 `GET /api/today` is the only read the tablet makes. `lib/today.ts` assembles it from the
 sheet cache (`kv` table, refreshed when older than 10 minutes), Google Calendar, Open-Meteo,
-`job_completions`, `cards`, `catalog_items`, Crate, and Yoto. The Music card's crate
+`job_completions`, `cards`, `catalog_items`, Crate, Yoto, and the home movies list
+(`HOME_MOVIES_URL`, the personal site's `/movies.json`; a row per kid on the Watch page). The Music card's crate
 comes separately from `GET /api/music/crate` (`HOME_CRATE`, else the first crate), fetched
 hourly so the covers don't reshuffle under a finger. Every source is wrapped so one
 failure only adds a line to `warnings`. Yoto commands go out over MQTT from `api/yoto`, one
 short session each; Yoto's rotating refresh token lives in `kv.yoto_auth`.
+Home movies are plain MP4s, so the tablet casts them (`tv/Cast.kt`, Cast on port 8009,
+Default Media Receiver) instead of opening an app link over the remote protocol.
 
 The Google Sheet is the master list (`supabase/sheet-template.md`). `lib/catalog.ts`
 resolves Watch rows with TMDB (availability) and JustWatch's GraphQL endpoint (title

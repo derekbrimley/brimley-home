@@ -4,6 +4,7 @@ import { fetchEvents, normalizeEvents, parseFamily } from "./calendar";
 import { listenSourceKey, resolveListen, resolveWatch, toCatalogItems, watchSourceKey, type CatalogRow } from "./catalog";
 import { showEpisodes } from "./episodes";
 import { fetchKitchenPlaying } from "./crate";
+import { fetchHomeMovies } from "./homeMovies";
 import { buildJobsBlocks } from "./jobs";
 import { getCardRows, getCatalogRows, getCompletions, getSheetCache, getShowsWithEpisodes, setSheetCache, upsertCatalogRow } from "./queries";
 import { fetchSheet, serviceLabelFor, writeWatchResult, type SheetData } from "./sheet";
@@ -137,7 +138,7 @@ export async function buildToday(now = new Date()): Promise<Today> {
   }
 
   const dayStart = new Date(`${date}T00:00:00`);
-  const [weather, eventsRaw, completions, cardRows, catalogRows, playing, withEpisodes] = await Promise.all([
+  const [weather, eventsRaw, completions, cardRows, catalogRows, playing, withEpisodes, homeMovies] = await Promise.all([
     settle("weather", process.env.HOME_LATLON ? fetchWeather(process.env.HOME_LATLON, tz) : Promise.resolve(null), warnings),
     settle("calendar", fetchEvents(isoAtLocal(date, "00:00", tz), isoAtLocal(addDays(date, 2), "00:00", tz)), warnings),
     settle("jobs", getCompletions(weekStart(date, weekday), date), warnings),
@@ -145,6 +146,7 @@ export async function buildToday(now = new Date()): Promise<Today> {
     sheet ? settle("catalog", syncCatalog(sheet), warnings) : Promise.resolve(null),
     fetchPlaying(warnings),
     settle("episodes", getShowsWithEpisodes(), warnings),
+    settle("home movies", fetchHomeMovies(), warnings),
   ]);
   void dayStart;
 
@@ -164,6 +166,7 @@ export async function buildToday(now = new Date()): Promise<Today> {
     cards: cardRows ? activeCards(cardRows, now.toISOString()) : [],
     playing,
     catalog: catalogRows && sheet ? toCatalogItems(catalogRows, sheet.services, withEpisodes ?? undefined) : [],
+    homeMovies: homeMovies ?? [],
     makes: sheet ? toMakes(sheet.makes) : [],
     warnings,
   };
