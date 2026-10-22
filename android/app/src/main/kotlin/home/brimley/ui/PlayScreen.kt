@@ -49,11 +49,14 @@ import home.brimley.audio.Podcast
 import home.brimley.audio.PodcastFeeds
 import home.brimley.audio.PodcastPlayer
 import home.brimley.audio.storyQueue
+import home.brimley.tv.CastVideo
 import home.brimley.tv.StartedTitle
 import home.brimley.tv.TvController
 import home.brimley.tv.TvNotPaired
 import home.brimley.tv.TvState
 import home.brimley.model.CatalogItem
+import home.brimley.model.HomeMovie
+import home.brimley.model.HomeMovieShelf
 import home.brimley.model.MusicItem
 import home.brimley.model.MusicShelf
 import home.brimley.model.Stories
@@ -91,6 +94,7 @@ fun PlayScreen(
 ) {
     val tab = initialTab
     var pending by remember { mutableStateOf<CatalogItem?>(null) }
+    var pendingMovie by remember { mutableStateOf<HomeMovie?>(null) }
     var tvStatus by remember { mutableStateOf<String?>(null) }
     var starting by remember { mutableStateOf(false) }
     var shelves by remember { mutableStateOf<List<MusicShelf>?>(null) }
@@ -103,14 +107,14 @@ fun PlayScreen(
     var storyBusy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // Start a link on the TV from the Watch sheet; it stays open with the reason if that fails.
-    fun startOnTv(link: String, started: StartedTitle) {
-        if (tv.state.value == TvState.NotPaired) { pending = null; onSetUpTv(); return }
+    // Start something on the TV from the Watch sheet; it stays open with the reason if that fails.
+    fun startOnTv(start: suspend () -> Result<Unit>) {
+        if (tv.state.value == TvState.NotPaired) { pending = null; pendingMovie = null; onSetUpTv(); return }
         starting = true
         tvStatus = "Starting on the TV…"
         scope.launch {
-            tv.play(link, started)
-                .onSuccess { pending = null; onHome() }
+            start()
+                .onSuccess { pending = null; pendingMovie = null; onHome() }
                 .onFailure { tvStatus = if (it is TvNotPaired) "The TV isn't set up yet" else it.message ?: "Couldn't reach the TV" }
             starting = false
         }
@@ -144,9 +148,12 @@ fun PlayScreen(
 
         Box(Modifier.fillMaxSize()) {
             when (tab) {
-                PlayTab.Watch -> WatchShelves(today?.catalog.orEmpty().filter { !it.link.isNullOrBlank() }, onPick = {
-                    if (it.hasEpisodes) onOpenShow(it) else { pending = it; tvStatus = null }
-                })
+                PlayTab.Watch -> WatchShelves(
+                    today?.catalog.orEmpty().filter { !it.link.isNullOrBlank() },
+                    today?.homeMovies.orEmpty(),
+                    onPick = { if (it.hasEpisodes) onOpenShow(it) else { pending = it; tvStatus = null } },
+                    onPickMovie = { pendingMovie = it; tvStatus = null },
+                )
                 PlayTab.Music -> MusicShelves(
                     shelves = shelves,
                     error = musicError,
@@ -171,9 +178,14 @@ fun PlayScreen(
                     })
                 } else {
                     ConfirmPlay(item, status = tvStatus, busy = starting, onCancel = { pending = null }, onPlay = {
-                        startOnTv(item.link!!, StartedTitle(item.title, item.serviceLabel, item.posterUrl))
+                        startOnTv { tv.play(item.link!!, StartedTitle(item.title, item.serviceLabel, item.posterUrl)) }
                     })
                 }
+            }
+            pendingMovie?.let { movie ->
+                ConfirmMovie(movie, status = tvStatus, busy = starting, onCancel = { pendingMovie = null }, onPlay = {
+                    startOnTv { tv.cast(CastVideo(movie.videoUrl, movie.title, movie.posterUrl), StartedTitle(movie.title, HOME_MOVIE_LABEL, movie.posterUrl)) }
+                })
             }
             story?.let { card ->
                 StorySheet(
@@ -266,7 +278,7 @@ private fun Cover(item: MusicItem, onClick: () -> Unit) {
 private val shelfOrder = listOf("shows" to "Shows", "movies" to "Movies", "videos" to "Videos", "listen" to "Listen")
 
 @Composable
-private fun WatchShelves(catalog: List<CatalogItem>, onPick: (CatalogItem) -> Unit) {
+private fun WatchShelves(catalog: List<CatalogItem>, homeMovies: List<HomeMovieShelf>, onPick: (CatalogItem) -> Unit, onPickMovie: (HomeMovie) -> Unit) {
     val groups = catalog.groupBy { it.shelf }
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 30.dp, vertical = 14.dp)) {
         shelfOrder.forEach { (key, label) ->
@@ -285,7 +297,23 @@ private fun WatchShelves(catalog: List<CatalogItem>, onPick: (CatalogItem) -> Un
                 }
             }
         }
-        if (catalog.isEmpty()) item { ComingSoon("Nothing on the shelves yet. Add titles to the Watch tab of the family sheet.") }
+        // Home movies come from the personal site, not the sheet: a row per kid.
+        homeMovies.forEachIndexed { i, shelf ->
+            if (shelf.movies.isEmpty()) return@forEachIndexed
+            item(key = "hm-h-$i") {
+                Text(shelf.name, style = MaterialTheme.typography.titleLarge, color = Ink, modifier = Modifier.padding(top = 10.dp, bottom = 8.dp))
+            }
+            item(key = "hm-r-$i") {
+                Column {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                        items(shelf.movies, key = { it.id }) { MovieTile(it, onClick = { onPickMovie(it) }) }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider(thickness = 5.dp, color = Ink)
+                }
+            }
+        }
+        if (catalog.isEmpty() && homeMovies.all { it.movies.isEmpty() }) item { ComingSoon("Nothing on the shelves yet. Add titles to the Watch tab of the family sheet.") }
     }
 }
 
@@ -313,6 +341,45 @@ private fun Poster(item: CatalogItem, onClick: () -> Unit) {
         Spacer(Modifier.height(6.dp))
         Text(item.title, style = MaterialTheme.typography.labelLarge, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Pill(item.serviceLabel.uppercase(), filled = item.service == "netflix")
+    }
+}
+
+private const val HOME_MOVIE_LABEL = "Home movie"
+
+@Composable
+private fun MovieTile(movie: HomeMovie, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.width(220.dp).clickable(onClick = onClick)) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(shape)
+                .background(PaperBright)
+                .border(BorderStroke(4.dp, Ink), shape),
+        ) {
+            if (movie.posterUrl != null) {
+                AsyncImage(model = movie.posterUrl, contentDescription = movie.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            } else {
+                CamcorderIllustration(Modifier.fillMaxSize().padding(16.dp))
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(movie.title, style = MaterialTheme.typography.labelLarge, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun ConfirmMovie(movie: HomeMovie, status: String?, busy: Boolean, onCancel: () -> Unit, onPlay: () -> Unit) {
+    Sheet(onCancel) {
+        Text(movie.title, style = MaterialTheme.typography.headlineMedium, color = Ink)
+        Text("$HOME_MOVIE_LABEL · Play on the living room TV?", style = MaterialTheme.typography.bodyMedium, color = Ink, modifier = Modifier.padding(top = 6.dp))
+        status?.let { Text(it, style = MaterialTheme.typography.titleMedium, color = Ink, modifier = Modifier.padding(top = 14.dp)) }
+        Spacer(Modifier.height(22.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            InkButton("Not now", onClick = onCancel, filled = false, modifier = Modifier.weight(1f))
+            InkButton(if (status != null && !busy) "Try again" else "Play", onClick = { if (!busy) onPlay() }, modifier = Modifier.weight(1f))
+        }
     }
 }
 

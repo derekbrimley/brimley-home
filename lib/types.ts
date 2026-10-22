@@ -97,6 +97,20 @@ export interface Weather {
   icon: "sun" | "cloud" | "rain" | "snow" | "storm" | "fog";
 }
 
+// Home movies from the personal site: a shelf per kid, then "More videos".
+// videoUrl is a plain MP4 (behind a redirect) that the tablet casts to the TV.
+export interface HomeMovie {
+  id: string;
+  title: string;
+  videoUrl: string;
+  posterUrl: string | null;
+}
+
+export interface HomeMovieShelf {
+  name: string;
+  movies: HomeMovie[];
+}
+
 export interface Make {
   title: string;
   who: string | null;
@@ -124,6 +138,7 @@ export interface Today {
   cards: Card[];          // at most one note or drawing: the newest
   playing: Playing[];
   catalog: CatalogItem[];
+  homeMovies: HomeMovieShelf[];
   makes: Make[];
   warnings: string[];     // sources that failed; the tablet shows nothing for them
 }

@@ -22,6 +22,7 @@ class TvController(
     private val connector: TvConnector,
     private val discovery: TvDiscovery,
     private val scope: CoroutineScope,
+    private val caster: VideoCaster = CastClient(),
 ) {
     private val _state = MutableStateFlow<TvState>(if (store.serverCertSha256 == null) TvState.NotPaired else TvState.Connecting)
     val state: StateFlow<TvState> = _state
@@ -104,7 +105,12 @@ class TvController(
 
     // Opens the link and stops there. Most apps land on the title's page (or ask
     // who's watching first); the OK button on the Playing card takes it from there.
-    suspend fun play(link: String, title: StartedTitle): Result<Unit> {
+    suspend fun play(link: String, title: StartedTitle): Result<Unit> = whenOn(title) { s -> s.send(RemoteMessages.appLink(link)) }
+
+    // A video file (a home movie) goes to the TV's Cast player, and starts playing.
+    suspend fun cast(video: CastVideo, title: StartedTitle): Result<Unit> = whenOn(title) { caster.cast(store.host ?: throw IOException("Couldn't reach the TV"), video) }
+
+    private suspend fun whenOn(title: StartedTitle, start: suspend (TvSession) -> Unit): Result<Unit> {
         if (store.serverCertSha256 == null) return Result.failure(TvNotPaired())
         val s = liveSession() ?: return Result.failure(IOException("Couldn't reach the TV"))
         return runCatching {
@@ -116,8 +122,8 @@ class TvController(
                 withTimeoutOrNull(POWER_ON_MS) { s.status.first { it.poweredOn == true } }
                     ?: throw IOException("The TV didn't turn on")
             }
+            start(s)
             started = title
-            s.send(RemoteMessages.appLink(link))
             publish(s.status.value)
         }
     }

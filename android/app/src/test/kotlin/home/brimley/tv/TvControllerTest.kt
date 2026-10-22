@@ -66,6 +66,31 @@ class TvControllerTest {
         assertEquals(TvState.On(null, bluey), c.state.value)
     }
 
+    @Test fun aHomeMovieIsCastAfterTheTvWakes() = runTest {
+        val tv = FakeSession(on = false)
+        val cast = mutableListOf<Pair<String, CastVideo>>()
+        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope, { host, v -> cast += host to v })
+        c.start(); runCurrent()
+        val beach = CastVideo("https://site/movies/beach/video?k=x", "Beach Day", null)
+        val title = StartedTitle("Beach Day", "Home movie", null)
+
+        assertTrue(c.cast(beach, title).isSuccess)
+        assertEquals(listOf(RemoteMessages.key(KeyCode.POWER).hex()), tv.sent.map { it.hex() })   // no app link
+        assertEquals(listOf("10.0.0.5" to beach), cast)
+        runCurrent()
+        assertEquals(TvState.On(null, title), c.state.value)
+    }
+
+    @Test fun aFailedCastSaysWhy() = runTest {
+        val tv = FakeSession(on = true)
+        val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope, { _, _ -> throw IOException("The TV couldn't play this video") })
+        c.start(); runCurrent()
+        val result = c.cast(CastVideo("u", "Beach Day", null), StartedTitle("Beach Day", "Home movie", null))
+        assertEquals("The TV couldn't play this video", result.exceptionOrNull()?.message)
+        runCurrent()
+        assertEquals(TvState.On(null, null), c.state.value)
+    }
+
     @Test fun playSaysSoWhenTheTvNeverWakes() = runTest {
         val tv = FakeSession(on = false).apply { powerTurnsOn = false }
         val c = TvController(MemoryStore(), FakeConnector(mutableMapOf("10.0.0.5" to tv)), { null }, backgroundScope)

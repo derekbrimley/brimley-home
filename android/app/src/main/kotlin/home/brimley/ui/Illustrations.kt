@@ -147,6 +147,21 @@ fun FridgeIllustration(modifier: Modifier = Modifier, ink: Color = Ink, paper: C
     }
 }
 
+// A home movie: a camcorder with its lens and a little flip-out screen.
+@Composable
+fun CamcorderIllustration(modifier: Modifier = Modifier, ink: Color = Ink, paper: Color = Paper) {
+    Canvas(modifier) {
+        inBox {
+            drawRoundRect(ink, topLeft = Offset(12f, 30f), size = Size(56f, 40f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f, 8f))
+            drawPath(Path().apply { moveTo(68f, 42f); lineTo(90f, 30f); lineTo(90f, 70f); lineTo(68f, 58f); close() }, ink)
+            drawCircle(paper, radius = 11f, center = Offset(36f, 50f))
+            drawCircle(ink, radius = 5f, center = Offset(36f, 50f))
+            drawCircle(paper, radius = 3f, center = Offset(58f, 38f))
+            drawRoundRect(ink, topLeft = Offset(20f, 18f), size = Size(24f, 8f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f))
+        }
+    }
+}
+
 fun starPath(cx: Float, cy: Float, r: Float): Path = Path().apply {
     for (i in 0 until 10) {
         val rad = if (i % 2 == 0) r else r * 0.45f
