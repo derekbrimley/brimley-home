@@ -69,8 +69,10 @@ curl -fsS -X POST "$HOME_URL/api/cards/lunch" \
 
 `week_of` is the Monday; each `date` is a weekday in that week (1 to 5 of them, so
 holiday weeks are fine); `menu` is the text shown on that day's tile. Each day can also
-carry `photo`, an https link to the dish's picture on the school's menu site: tapping a
-day's tile on the tablet opens it big (a tray drawing when there is no photo).
+carry `photo`, an https link to the dish's picture. Days without one get the picture of
+the closest dish on the district's menu page (`LUNCH_MENU_URL`, Granite's elementary
+lunch calendar by default), matched by name when the menu is posted. Tapping a day's
+tile on the tablet opens it big (a tray drawing when there is no photo).
 
 ## Tablet app
 

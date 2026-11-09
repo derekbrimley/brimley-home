@@ -49,6 +49,8 @@ comes separately from `GET /api/music/crate` (`HOME_CRATE`, else the first crate
 hourly so the covers don't reshuffle under a finger. Every source is wrapped so one
 failure only adds a line to `warnings`. Yoto commands go out over MQTT from `api/yoto`, one
 short session each; Yoto's rotating refresh token lives in `kv.yoto_auth`.
+Zo's Monday lunch menu (`POST /api/cards/lunch`) gets each day's photo from the district's
+menu page (`lib/lunchPhotos.ts`, matched by dish name; no match, no photo).
 Home movies are plain MP4s, so the tablet casts them (`tv/Cast.kt`, Cast on port 8009,
 Default Media Receiver) instead of opening an app link over the remote protocol.
 
