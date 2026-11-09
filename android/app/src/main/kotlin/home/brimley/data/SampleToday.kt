@@ -93,7 +93,10 @@ object SampleToday {
                     putJsonArray("days") {
                         listOf("Mon" to "Cheese pizza", "Tue" to "Chicken nuggets", "Wed" to "Taco bar",
                             "Thu" to "Mac & cheese", "Fri" to "Bean burrito").forEach { (day, menu) ->
-                            addJsonObject { put("day", day); put("menu", menu) }
+                            addJsonObject {
+                                put("day", day); put("menu", menu)
+                                if (day == "Mon") put("photo", "https://picsum.photos/seed/lunch/800/600")
+                            }
                         }
                     }
                 },

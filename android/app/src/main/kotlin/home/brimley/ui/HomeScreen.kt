@@ -1,6 +1,9 @@
 package home.brimley.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,11 +20,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImage
 import home.brimley.model.Card
 import home.brimley.model.MusicItem
 import home.brimley.model.MusicShelf
@@ -35,6 +47,9 @@ import home.brimley.ui.cards.WatchCard
 import home.brimley.ui.cards.YotoCard
 import home.brimley.ui.theme.Ink
 import home.brimley.ui.theme.Paper
+import home.brimley.ui.theme.Rules
+import home.brimley.ui.theme.TileShape
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -157,28 +172,88 @@ private fun Footer(today: Today) {
     }
 }
 
+private data class LunchDay(val day: String, val menu: String, val photo: String?)
+
+// Each day is a button: tapping it opens that day's lunch with its photo from the school's menu site.
 @Composable
 private fun LunchWeek(card: Card, date: LocalDate) {
     val days = runCatching {
         card.data?.get("days")?.jsonArray?.map { d ->
             val o = d.jsonObject
-            (o["day"]?.jsonPrimitive?.content ?: "") to (o["menu"]?.jsonPrimitive?.content ?: "")
+            LunchDay(
+                day = o["day"]?.jsonPrimitive?.content ?: "",
+                menu = o["menu"]?.jsonPrimitive?.content ?: "",
+                photo = o["photo"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() },
+            )
         }
     }.getOrNull().orEmpty()
     val todayAbbrev = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.US)
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        days.forEach { (day, menu) ->
-            val isToday = day.equals(todayAbbrev, ignoreCase = true)
+    var open by remember(card.id) { mutableStateOf<LunchDay?>(null) }
+    Row(
+        Modifier.fillMaxWidth().fillMaxHeight().padding(vertical = 7.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        days.forEach { d ->
+            val isToday = d.day.equals(todayAbbrev, ignoreCase = true)
             val fg = if (isToday) Ink else Paper
+            val shape = RoundedCornerShape(10.dp)
             Column(
                 Modifier
                     .weight(1f)
-                    .background(if (isToday) Paper else Ink, RoundedCornerShape(10.dp))
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .fillMaxHeight()
+                    .clip(shape)
+                    .background(if (isToday) Paper else Ink)
+                    .border(BorderStroke(Rules.thin, Paper), shape)
+                    .clickable { open = d }
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.Center,
             ) {
-                Text(day.uppercase(), style = MaterialTheme.typography.labelMedium, color = fg)
-                Text(menu, style = MaterialTheme.typography.bodySmall, color = fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(d.day.uppercase(), style = MaterialTheme.typography.labelMedium, color = fg)
+                Text(d.menu, style = MaterialTheme.typography.bodySmall, color = fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+    open?.let { LunchPhoto(it, onClose = { open = null }) }
+}
+
+// One day's lunch, big: the photo when the menu site has one, else the tray drawing.
+@Composable
+private fun LunchPhoto(day: LunchDay, onClose: () -> Unit) {
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        InkCard(Modifier.fillMaxWidth(0.72f).fillMaxHeight(0.86f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(dayName(day.day), style = MaterialTheme.typography.titleMedium, color = Ink)
+                    Text(day.menu, style = MaterialTheme.typography.headlineMedium, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                Spacer(Modifier.width(16.dp))
+                InkButton("Done", onClick = onClose, modifier = Modifier.height(64.dp))
+            }
+            Spacer(Modifier.height(16.dp))
+            Box(
+                Modifier.weight(1f).fillMaxWidth().clip(TileShape).border(BorderStroke(Rules.thin, Ink), TileShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                var failed by remember(day.photo) { mutableStateOf(day.photo == null) }
+                if (failed) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        LunchTrayIllustration(Modifier.size(180.dp))
+                        Text("No picture of this one", style = MaterialTheme.typography.bodyLarge, color = Ink)
+                    }
+                } else {
+                    AsyncImage(
+                        model = day.photo,
+                        contentDescription = day.menu,
+                        contentScale = ContentScale.Fit,
+                        onError = { failed = true },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
     }
 }
+
+private fun dayName(abbrev: String): String =
+    java.time.DayOfWeek.entries.firstOrNull { it.getDisplayName(TextStyle.SHORT, Locale.US).equals(abbrev, ignoreCase = true) }
+        ?.getDisplayName(TextStyle.FULL, Locale.US) ?: abbrev

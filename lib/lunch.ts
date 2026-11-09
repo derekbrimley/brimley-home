@@ -6,6 +6,7 @@ export interface LunchDay {
   day: string;   // "Mon"
   date: string;  // YYYY-MM-DD
   menu: string;
+  photo?: string; // the dish's photo on the school's menu site, shown when the tile is tapped
 }
 
 export interface LunchWeek {
@@ -25,7 +26,16 @@ function weekdayOf(ymd: string): number {
   return localWeekday(new Date(`${ymd}T12:00:00Z`), "UTC");
 }
 
-// Validate Zo's payload: { week_of, days: [{ date, menu }] }. Returns the week or an error.
+function isPhotoUrl(s: unknown): s is string {
+  if (typeof s !== "string") return false;
+  try {
+    return new URL(s).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+// Validate Zo's payload: { week_of, days: [{ date, menu, photo? }] }. Returns the week or an error.
 export function parseLunchWeek(body: unknown): LunchWeek | { error: string } {
   if (!body || typeof body !== "object") return { error: "body must be a JSON object" };
   const b = body as Record<string, unknown>;
@@ -42,7 +52,11 @@ export function parseLunchWeek(body: unknown): LunchWeek | { error: string } {
     if (!isDate(o.date) || o.date < weekOf || o.date > friday) return { error: `days[${i}].date must be a weekday in the week of ${weekOf}` };
     if (typeof o.menu !== "string" || !o.menu.trim()) return { error: `days[${i}].menu is required` };
     if (days.some((x) => x.date === o.date)) return { error: `days[${i}].date is repeated` };
-    days.push({ day: DAY_NAMES[weekdayOf(o.date) - 1], date: o.date, menu: o.menu.trim() });
+    const photo = typeof o.photo === "string" ? o.photo.trim() : o.photo;
+    if (photo != null && photo !== "" && !isPhotoUrl(photo)) return { error: `days[${i}].photo must be an https URL` };
+    const day: LunchDay = { day: DAY_NAMES[weekdayOf(o.date) - 1], date: o.date, menu: o.menu.trim() };
+    if (photo) day.photo = photo as string;
+    days.push(day);
   }
   days.sort((a, b) => a.date.localeCompare(b.date));
   return { weekOf, days };

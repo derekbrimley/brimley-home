@@ -63,12 +63,14 @@ curl -fsS -X POST "$HOME_URL/api/cards/lunch" \
 
 ```json
 { "week_of": "2026-10-12",
-  "days": [ { "date": "2026-10-12", "menu": "Breakfast for Lunch" },
+  "days": [ { "date": "2026-10-12", "menu": "Breakfast for Lunch", "photo": "https://…/breakfast.jpg" },
             { "date": "2026-10-13", "menu": "Soft Tacos (chicken, taco meat, or pork)" } ] }
 ```
 
 `week_of` is the Monday; each `date` is a weekday in that week (1 to 5 of them, so
-holiday weeks are fine); `menu` is the text shown on that day's tile.
+holiday weeks are fine); `menu` is the text shown on that day's tile. Each day can also
+carry `photo`, an https link to the dish's picture on the school's menu site: tapping a
+day's tile on the tablet opens it big (a tray drawing when there is no photo).
 
 ## Tablet app
 
