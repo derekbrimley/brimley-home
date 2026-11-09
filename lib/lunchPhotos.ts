@@ -39,10 +39,15 @@ function decode(s: string): string {
     .replace(/&#0?39;|&#8217;|&rsquo;/g, "'").replace(/&nbsp;/g, " ");
 }
 
-// Every food picture on the page, at full size (WordPress thumbnails end in -150x150).
+// The dish pictures on the page. Each meal's pop-up has a big "meal-hero-image" (the
+// plated dish); the rest are 48 px thumbnails of its parts ("Hot Dog Bun", "Doritos"),
+// which are only used if the page has no hero images at all. Thumbnails are taken at
+// full size (WordPress names them -150x150).
 export function menuPhotos(html: string, pageUrl: string): MenuPhoto[] {
+  const tags = html.match(/<img\b[^>]*>/gi) ?? [];
+  const heroes = tags.filter((t) => /\bmeal-hero-image\b/i.test(attr(t, "class") ?? ""));
   const seen = new Map<string, MenuPhoto>();
-  for (const tag of html.match(/<img\b[^>]*>/gi) ?? []) {
+  for (const tag of heroes.length ? heroes : tags) {
     const src = attr(tag, "data-lazy-src") ?? attr(tag, "data-src") ?? attr(tag, "src");
     if (!src || src.startsWith("data:")) continue;
     let url: URL;
@@ -52,7 +57,7 @@ export function menuPhotos(html: string, pageUrl: string): MenuPhoto[] {
       continue;
     }
     if (url.protocol !== "https:" || !/\.(png|jpe?g|webp)$/i.test(url.pathname)) continue;
-    url.pathname = url.pathname.replace(/-\d+x\d+(\.\w+)$/, "$1");
+    url.pathname = url.pathname.replace(/-150x150(\.\w+)$/, "$1");
     const file = decodeURIComponent(url.pathname.split("/").pop() ?? "").replace(/\.\w+$/, "").replace(/-\d+$/, "");
     const words = dishWords(`${decode(attr(tag, "alt") ?? "")} ${file}`);
     if (words.size === 0) continue;
