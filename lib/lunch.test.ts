@@ -35,6 +35,28 @@ describe("parseLunchWeek", () => {
   });
 });
 
+describe("lunch photos", () => {
+  it("keeps an https photo per day and leaves it off when there is none", () => {
+    const parsed = parseLunchWeek({
+      week_of: "2026-11-09",
+      days: [
+        { date: "2026-11-09", menu: "Hot Dog", photo: " https://example.com/hotdog.jpg " },
+        { date: "2026-11-10", menu: "Nachos", photo: "" },
+        { date: "2026-11-11", menu: "Chicken and Waffles", photo: null },
+      ],
+    }) as LunchWeek;
+    expect(parsed.days.map((d) => d.photo)).toEqual(["https://example.com/hotdog.jpg", undefined, undefined]);
+    expect("photo" in parsed.days[1]).toBe(false);
+  });
+
+  it("rejects a photo that isn't an https link", () => {
+    for (const photo of ["http://example.com/a.jpg", "not a url", 42]) {
+      expect(parseLunchWeek({ week_of: "2026-11-09", days: [{ date: "2026-11-09", menu: "x", photo }] }))
+        .toEqual({ error: expect.stringMatching(/days\[0\]\.photo/) });
+    }
+  });
+});
+
 describe("lunchCard", () => {
   it("shows only on that Monday, in the home timezone", () => {
     const card = lunchCard(parseLunchWeek(week) as LunchWeek, "America/Denver");

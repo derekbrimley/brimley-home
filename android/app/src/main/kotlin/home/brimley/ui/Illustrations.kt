@@ -162,6 +162,23 @@ fun CamcorderIllustration(modifier: Modifier = Modifier, ink: Color = Ink, paper
     }
 }
 
+// School lunch: a divided tray with a fork, the cut-outs are its compartments.
+@Composable
+fun LunchTrayIllustration(modifier: Modifier = Modifier, ink: Color = Ink, paper: Color = Paper) {
+    Canvas(modifier) {
+        inBox {
+            val r = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
+            drawRoundRect(ink, topLeft = Offset(8f, 24f), size = Size(84f, 56f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f, 10f))
+            drawRoundRect(paper, topLeft = Offset(16f, 32f), size = Size(40f, 40f), cornerRadius = r)
+            drawRoundRect(paper, topLeft = Offset(62f, 32f), size = Size(22f, 17f), cornerRadius = r)
+            drawRoundRect(paper, topLeft = Offset(62f, 55f), size = Size(22f, 17f), cornerRadius = r)
+            drawCircle(ink, radius = 9f, center = Offset(36f, 52f))
+            drawRect(ink, topLeft = Offset(46f, 8f), size = Size(4f, 14f))
+            drawRect(ink, topLeft = Offset(40f, 8f), size = Size(16f, 4f))
+        }
+    }
+}
+
 fun starPath(cx: Float, cy: Float, r: Float): Path = Path().apply {
     for (i in 0 until 10) {
         val rad = if (i % 2 == 0) r else r * 0.45f

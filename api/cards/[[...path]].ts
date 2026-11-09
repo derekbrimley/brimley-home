@@ -3,6 +3,7 @@ import { authenticate } from "../../lib/auth";
 import { subPath } from "../../lib/route";
 import { activeCards, validateCardInput } from "../../lib/cards";
 import { lunchCard, parseLunchWeek } from "../../lib/lunch";
+import { addLunchPhotos } from "../../lib/lunchPhotos";
 import { deleteCard, deleteLunchCards, getCardRows, insertCard } from "../../lib/queries";
 
 // GET    /api/cards          active cards
@@ -39,6 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "POST" && path.length === 1 && path[0] === "lunch") {
     const week = parseLunchWeek(req.body);
     if ("error" in week) return res.status(400).json({ error: week.error });
+    week.days = await addLunchPhotos(week.days);
     await deleteLunchCards(week.weekOf);
     const card = await insertCard({ ...lunchCard(week, process.env.HOME_TZ ?? "America/Denver"), source: who });
     return res.status(201).json({ card });
