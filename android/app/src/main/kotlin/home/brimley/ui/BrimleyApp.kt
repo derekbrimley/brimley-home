@@ -14,6 +14,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import home.brimley.BuildConfig
 import home.brimley.data.TodayRepository
+import home.brimley.model.MusicShelf
+import home.brimley.ui.cards.CratePicker
 import home.brimley.audio.PodcastFeeds
 import home.brimley.audio.PodcastPlayer
 import home.brimley.tv.LastEpisodeStore
@@ -42,6 +44,10 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
     val podcast by podcasts.state.collectAsState()
     val scope = rememberCoroutineScope()
     var musicStatus by remember { mutableStateOf<String?>(null) }
+    // The crate picker: open, and the crates once they've loaded (fetched each time it opens).
+    var pickingCrate by remember { mutableStateOf(false) }
+    var crates by remember { mutableStateOf<List<MusicShelf>?>(null) }
+    var cratesError by remember { mutableStateOf<String?>(null) }
     val onControl: (String, String) -> Unit = { target, action ->
         when (target) {
             "kitchen" -> repository.controlMusic(action)
@@ -84,6 +90,16 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
                                     .onFailure { musicStatus = it.message ?: "Couldn't start it" }
                             }
                         },
+                        onPickCrate = {
+                            pickingCrate = true
+                            crates = null
+                            cratesError = null
+                            scope.launch {
+                                repository.musicShelves()
+                                    .onSuccess { crates = it }
+                                    .onFailure { cratesError = it.message ?: "Couldn't reach Crate" }
+                            }
+                        },
                         onPickWatch = { screen = Screen.Play(PlayTab.Watch) },
                         onPickStory = { screen = Screen.Play(PlayTab.Stories) },
                         playing = mergePlaying(today.playing, tvState, podcast),
@@ -91,6 +107,15 @@ fun BrimleyApp(repository: TodayRepository, tv: TvController, podcasts: PodcastP
                         onControl = onControl,
                         onSetUpTv = { screen = Screen.TvPair },
                     )
+                    if (pickingCrate) {
+                        CratePicker(
+                            crates = crates,
+                            error = cratesError,
+                            currentId = state.crate?.id,
+                            onChoose = { repository.chooseCrate(it); pickingCrate = false },
+                            onClose = { pickingCrate = false },
+                        )
+                    }
                 }
             }
             is Screen.Play -> PlayScreen(

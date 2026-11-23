@@ -45,8 +45,9 @@ cd android && ./gradlew assembleDebug   # needs the Android SDK
 sheet cache (`kv` table, refreshed when older than 10 minutes), Google Calendar, Open-Meteo,
 `job_completions`, `cards`, `catalog_items`, Crate, Yoto, and the home movies list
 (`HOME_MOVIES_URL`, the personal site's `/movies.json`; a row per kid on the Watch page). The Music card's crate
-comes separately from `GET /api/music/crate` (`HOME_CRATE`, else the first crate), fetched
-hourly so the covers don't reshuffle under a finger. Every source is wrapped so one
+comes separately from `GET /api/music/crate` (`?crate=` the tablet's pick, else `HOME_CRATE`, else the
+first crate), fetched hourly so the covers don't reshuffle under a finger. Tapping the card's title
+opens a list of every crate; the pick is kept on the tablet (`data/CrateChoice.kt`) until changed. Every source is wrapped so one
 failure only adds a line to `warnings`. Yoto commands go out over MQTT from `api/yoto`, one
 short session each; Yoto's rotating refresh token lives in `kv.yoto_auth`.
 Zo's Monday lunch menu (`POST /api/cards/lunch`) gets each day's photo from the district's

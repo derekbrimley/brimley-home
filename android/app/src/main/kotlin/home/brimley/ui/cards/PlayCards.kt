@@ -1,6 +1,7 @@
 package home.brimley.ui.cards
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,12 +11,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -27,9 +32,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import home.brimley.model.MusicItem
 import home.brimley.model.MusicShelf
@@ -42,6 +50,7 @@ import home.brimley.ui.RecordIllustration
 import home.brimley.ui.TvIllustration
 import home.brimley.ui.YotoIllustration
 import home.brimley.ui.theme.Ink
+import home.brimley.ui.theme.Paper
 import home.brimley.ui.theme.PaperBright
 import home.brimley.ui.theme.Rules
 import home.brimley.ui.theme.TileShape
@@ -60,11 +69,29 @@ fun MusicCard(
     playing: List<Playing>,
     onPlay: (MusicItem) -> Unit,
     onControl: (target: String, action: String) -> Unit,
+    onPickCrate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val now = playing.firstOrNull { it.target == "kitchen" || it.target == "podcast" }
     InkCard(modifier) {
-        CardTitle(crate?.name?.takeIf { it.isNotBlank() } ?: "Music", trailing = if (now == null) "kitchen quiet" else "kitchen speaker")
+        // The title is the crate picker: tap the name to show a different crate.
+        Row(
+            Modifier.heightIn(min = 64.dp).clickable(onClick = onPickCrate),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                crate?.name?.takeIf { it.isNotBlank() } ?: "Music",
+                style = MaterialTheme.typography.titleLarge, color = Ink,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
+            )
+            Spacer(Modifier.width(10.dp))
+            DownTriangle(Modifier.size(18.dp, 12.dp))
+            Text(
+                if (now == null) "kitchen quiet" else "kitchen speaker",
+                style = MaterialTheme.typography.labelMedium, color = Ink,
+                modifier = Modifier.padding(start = 14.dp), maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
         Spacer(Modifier.height(12.dp))
         if (now != null) {
             Row(verticalAlignment = Alignment.Top) {
@@ -97,6 +124,59 @@ fun MusicCard(
                 items(items, key = { it.id }) { item ->
                     val isOn = now?.target == "kitchen" && now.title.equals(item.title, ignoreCase = true)
                     AlbumTile(item, isOn, onClick = { onPlay(item) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DownTriangle(modifier: Modifier) {
+    Canvas(modifier) {
+        drawPath(Path().apply { moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2, size.height); close() }, Ink)
+    }
+}
+
+// Every crate, as big rows to tap. The one on the card is filled in.
+// `crates` is null while they load.
+@Composable
+fun CratePicker(
+    crates: List<MusicShelf>?,
+    error: String?,
+    currentId: String?,
+    onChoose: (MusicShelf) -> Unit,
+    onClose: () -> Unit,
+) {
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        InkCard(Modifier.fillMaxWidth(0.5f).fillMaxHeight(0.86f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RecordIllustration(Modifier.size(56.dp))
+                Spacer(Modifier.width(14.dp))
+                Text("Which crate?", style = MaterialTheme.typography.headlineMedium, color = Ink, modifier = Modifier.weight(1f))
+                InkButton("Done", onClick = onClose, filled = false, modifier = Modifier.height(64.dp))
+            }
+            Spacer(Modifier.height(16.dp))
+            when {
+                crates == null && error == null -> Quiet("Looking in the crates…")
+                crates == null -> Quiet(error!!)
+                crates.isEmpty() -> Quiet("No crates yet. Make one in Crate and it shows up here.")
+                else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(crates, key = { it.id }) { shelf ->
+                        val on = shelf.id == currentId
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 72.dp)
+                                .clip(TileShape)
+                                .background(if (on) Ink else Paper)
+                                .border(BorderStroke(Rules.thin, Ink), TileShape)
+                                .clickable { onChoose(shelf) }
+                                .padding(horizontal = 22.dp, vertical = 12.dp),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            Text(shelf.name, style = MaterialTheme.typography.titleLarge, color = if (on) Paper else Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
                 }
             }
         }

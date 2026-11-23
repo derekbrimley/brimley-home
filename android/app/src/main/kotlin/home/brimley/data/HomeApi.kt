@@ -62,8 +62,9 @@ class HomeApi(private val baseUrl: String, private val token: String) {
         }
     }
 
-    suspend fun homeCrate(): MusicShelf? = withContext(Dispatchers.IO) {
-        client.newCall(request("/api/music/crate").get().build()).execute().use { res ->
+    suspend fun homeCrate(chosen: String? = null): MusicShelf? = withContext(Dispatchers.IO) {
+        val query = chosen?.let { "?crate=" + java.net.URLEncoder.encode(it, "UTF-8") }.orEmpty()
+        client.newCall(request("/api/music/crate$query").get().build()).execute().use { res ->
             val body = res.body?.string().orEmpty()
             if (!res.isSuccessful) throw ApiException(errorMessage(body) ?: "music ${res.code}")
             json.decodeFromString(CrateResponse.serializer(), body).crate
