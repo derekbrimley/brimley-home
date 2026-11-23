@@ -36,7 +36,12 @@ data class HomeState(
 // /api/playing every 15 s while the server reports something playing), keeps the
 // last good payload on disk so a reboot never shows a blank dashboard, and
 // applies job ticks optimistically so the checkbox never lags the finger.
-class TodayRepository(private val api: HomeApi, cacheDir: File, private val waker: SpotifyWaker? = null) {
+class TodayRepository(
+    private val api: HomeApi,
+    cacheDir: File,
+    private val waker: SpotifyWaker? = null,
+    private val crateChoice: CrateChoiceStore? = null,
+) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val cacheFile = File(cacheDir, "today.json")
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
@@ -87,12 +92,23 @@ class TodayRepository(private val api: HomeApi, cacheDir: File, private val wake
     private suspend fun refreshCrateIfStale() {
         val now = System.currentTimeMillis()
         if (_state.value.crate != null && now - crateLoadedAt < 60 * 60_000L) return
-        runCatching { api.homeCrate() }
+        val chosen = crateChoice?.crateId
+        runCatching { api.homeCrate(chosen) }
             .onSuccess { c ->
+                if (crateChoice?.crateId != chosen) return@onSuccess   // picked another meanwhile
                 crateLoadedAt = now
                 _state.update { it.copy(crate = c ?: MusicShelf("none", "Music", emptyList()), crateError = null) }
             }
             .onFailure { e -> _state.update { it.copy(crateError = e.message ?: "Couldn't reach Crate") } }
+    }
+
+    // Someone picked a crate from the Music card's title. Its preview (from
+    // /api/music) shows at once; the full crate replaces it a moment later.
+    fun chooseCrate(shelf: MusicShelf) {
+        crateChoice?.crateId = shelf.id
+        crateLoadedAt = 0L
+        _state.update { it.copy(crate = shelf, crateError = null) }
+        if (api.isConfigured) scope.launch { refreshCrateIfStale() }
     }
 
     suspend fun refresh() {

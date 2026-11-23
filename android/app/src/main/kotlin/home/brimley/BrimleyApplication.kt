@@ -4,6 +4,7 @@ import android.app.Application
 import home.brimley.audio.PodcastFeeds
 import home.brimley.audio.PodcastPlayer
 import home.brimley.data.HomeApi
+import home.brimley.data.PrefsCrateChoice
 import home.brimley.data.SpotifyWaker
 import home.brimley.data.TodayRepository
 import home.brimley.tv.AtvConnector
@@ -33,7 +34,7 @@ class BrimleyApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        repository = TodayRepository(HomeApi(BuildConfig.API_BASE, BuildConfig.API_TOKEN), cacheDir, waker = spotify)
+        repository = TodayRepository(HomeApi(BuildConfig.API_BASE, BuildConfig.API_TOKEN), cacheDir, waker = spotify, crateChoice = PrefsCrateChoice(this))
         podcasts = PodcastPlayer(this)
         lastEpisodes = PrefsLastEpisodes(this)
         tv = TvController(PrefsTvStore(this), AtvConnector(TvIdentity(), scope), NsdDiscovery(this), scope).also { it.start() }

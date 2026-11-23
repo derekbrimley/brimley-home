@@ -100,22 +100,28 @@ export async function fetchShelves(): Promise<CrateShelf[]> {
   return toShelves(await crate<CrateShelvesResponse>(`/crates?shelves=${SHELF_SIZE}`));
 }
 
-// The home screen's Music card shows one crate, scrolled in place: HOME_CRATE
-// (its name or id, case-insensitive), else the first crate with anything in it.
+// The home screen's Music card shows one crate, scrolled in place: the one the
+// tablet picked (?crate=, its id or name, case-insensitive), else HOME_CRATE,
+// else the first crate with anything in it. A picked crate that has since gone
+// falls back the same way.
 export const HOME_CRATE_SIZE = 60;
 
-export function pickCrate(shelves: CrateShelf[], wanted: string | undefined): CrateShelf | null {
+function findCrate(shelves: CrateShelf[], wanted: string | undefined): CrateShelf | undefined {
   const w = wanted?.trim().toLowerCase();
-  if (w) {
-    const hit = shelves.find((s) => s.id.toLowerCase() === w || s.name.toLowerCase() === w);
-    if (hit) return hit;
-  }
-  return shelves.find((s) => s.items.length > 0) ?? shelves[0] ?? null;
+  return w ? shelves.find((s) => s.id.toLowerCase() === w || s.name.toLowerCase() === w) : undefined;
 }
 
-export async function fetchHomeCrate(): Promise<CrateShelf | null> {
+export function pickCrate(shelves: CrateShelf[], wanted: string | undefined): CrateShelf | null {
+  return findCrate(shelves, wanted) ?? shelves.find((s) => s.items.length > 0) ?? shelves[0] ?? null;
+}
+
+export async function fetchHomeCrate(chosen?: string): Promise<CrateShelf | null> {
   const shelves = toShelves(await crate<CrateShelvesResponse>(`/crates?shelves=${HOME_CRATE_SIZE}`));
-  return pickCrate(shelves, process.env.HOME_CRATE);
+  return pickHomeCrate(shelves, chosen, process.env.HOME_CRATE);
+}
+
+export function pickHomeCrate(shelves: CrateShelf[], chosen: string | undefined, homeCrate: string | undefined): CrateShelf | null {
+  return findCrate(shelves, chosen) ?? pickCrate(shelves, homeCrate);
 }
 
 // The kitchen speaker is found by name (KITCHEN_DEVICE_NAME, substring match,

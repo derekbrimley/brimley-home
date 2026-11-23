@@ -70,6 +70,7 @@ fun HomeScreen(
     crateError: String?,
     musicStatus: String?,
     onPlayAlbum: (MusicItem) -> Unit,
+    onPickCrate: () -> Unit,
     onPickWatch: () -> Unit,
     onPickStory: () -> Unit,
     playing: List<Playing>,
@@ -95,7 +96,7 @@ fun HomeScreen(
                 )
             }
             // The note card (NoteCard) and the fridge are off the home screen for now.
-            MusicCard(crate, crateError, musicStatus, playing, onPlayAlbum, onControl, Modifier.weight(1.15f).fillMaxHeight())
+            MusicCard(crate, crateError, musicStatus, playing, onPlayAlbum, onControl, onPickCrate, Modifier.weight(1.15f).fillMaxHeight())
             Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 WatchCard(playing, tvSetUp, onPickWatch, onControl, onSetUpTv, Modifier.weight(1f).fillMaxWidth())
                 YotoCard(playing, onPickStory, onControl, Modifier.weight(1f).fillMaxWidth())

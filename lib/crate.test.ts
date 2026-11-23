@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { noDeviceMessage, pickCrate, pickDevice, toPlaying, toShelves } from "./crate";
+import { noDeviceMessage, pickCrate, pickHomeCrate, pickDevice, toPlaying, toShelves } from "./crate";
 
 describe("toPlaying", () => {
   it("prefers the album over the track for the title", () => {
@@ -45,6 +45,12 @@ describe("pickCrate", () => {
     expect(pickCrate(shelves, undefined)?.id).toBe("fav");
     expect(pickCrate(shelves, "nope")?.id).toBe("fav");
     expect(pickCrate([], undefined)).toBeNull();
+  });
+  it("prefers the tablet's pick over HOME_CRATE, and falls back when it's gone", () => {
+    expect(pickHomeCrate(shelves, "empty", "kids")?.id).toBe("empty");
+    expect(pickHomeCrate(shelves, "gone", "kids")?.id).toBe("kids");
+    expect(pickHomeCrate(shelves, undefined, "kids")?.id).toBe("kids");
+    expect(pickHomeCrate(shelves, "", undefined)?.id).toBe("fav");
   });
 });
 
